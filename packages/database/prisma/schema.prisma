@@ -1,0 +1,189 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+enum CustomOrderStatus {
+  PENDING
+  IN_PROGRESS
+  QUOTED
+  COMPLETED
+  REJECTED
+}
+
+enum PriceModifierType {
+  MULTIPLIER   // finalPrice = basePrice × modifier
+  FIXED_ADD    // finalPrice = basePrice + modifier
+  FIXED_PRICE  // finalPrice = modifier (overrides base)
+}
+
+enum ImageAngle {
+  FRONT
+  BACK
+  LEFT
+  RIGHT
+  TOP
+  DETAIL
+  LIFESTYLE
+}
+
+// ─── User ─────────────────────────────────────────────────────────────────────
+
+model User {
+  id            String        @id @default(cuid())
+  name          String
+  email         String        @unique
+  phone         String?
+  city          String?
+  role          Role          @default(CUSTOMER)
+  passwordHash  String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  customOrders  CustomOrder[]
+  wishlists     Wishlist[]
+}
+
+// ─── Category ─────────────────────────────────────────────────────────────────
+
+model Category {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  description String?
+  imageUrl    String?
+  icon        String?
+  parentId    String?
+  parent      Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryTree")
+  products    Product[]
+}
+
+// ─── Wood Type ────────────────────────────────────────────────────────────────
+
+model WoodType {
+  id          String               @id @default(cuid())
+  name        String               @unique
+  slug        String               @unique
+  description String?
+  imageUrl    String?
+  products    ProductWoodVariant[]
+}
+
+// ─── Product ──────────────────────────────────────────────────────────────────
+
+model Product {
+  id               String               @id @default(cuid())
+  name             String
+  slug             String               @unique
+  shortDescription String
+  description      String               @db.Text
+  basePrice        Float
+  sku              String               @unique
+  isFeatured       Boolean              @default(false)
+  isActive         Boolean              @default(true)
+  manufacturingTime String?
+  deliveryTime      String?
+  warranty          String?
+  weight            Float?
+  careInstructions  String?
+  tags              String[]
+  rating            Float?
+  reviewCount       Int                 @default(0)
+  categoryId        String
+  category          Category            @relation(fields: [categoryId], references: [id])
+  images            ProductImage[]
+  woodVariants      ProductWoodVariant[]
+  wishlists         Wishlist[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+}
+
+// ─── Product Image ────────────────────────────────────────────────────────────
+
+model ProductImage {
+  id        String     @id @default(cuid())
+  url       String
+  altText   String?
+  isPrimary Boolean    @default(false)
+  angle     ImageAngle @default(FRONT)
+  productId String
+  product   Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+// ─── Product × Wood (many-to-many with pricing data) ─────────────────────────
+
+model ProductWoodVariant {
+  id                String            @id @default(cuid())
+  priceModifier     Float             @default(0)
+  priceModifierType PriceModifierType @default(FIXED_ADD)
+  description       String?
+  durability        String?
+  productId         String
+  product           Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  woodTypeId        String
+  woodType          WoodType          @relation(fields: [woodTypeId], references: [id])
+
+  @@unique([productId, woodTypeId])
+}
+
+// ─── Wishlist ─────────────────────────────────────────────────────────────────
+
+model Wishlist {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  addedAt   DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+}
+
+// ─── Custom Order (Enquiry) ───────────────────────────────────────────────────
+
+model CustomOrder {
+  id              String            @id @default(cuid())
+  name            String
+  phone           String
+  email           String?
+  city            String?
+  furnitureType   String
+  woodType        String?
+  budgetRange     String
+  length          String?
+  width           String?
+  height          String?
+  description     String            @db.Text
+  referenceImages String[]
+  status          CustomOrderStatus @default(PENDING)
+  adminNotes      String?           @db.Text
+  quotedPrice     Float?
+  aiGeneratedQuote String?          @db.Text
+  userId          String?
+  user            User?             @relation(fields: [userId], references: [id])
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+}
+
+// ─── Admin Session ────────────────────────────────────────────────────────────
+// Stored server-side for forced logout / session revocation
+
+model AdminSession {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  adminEmail String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  revokedAt DateTime?
+}

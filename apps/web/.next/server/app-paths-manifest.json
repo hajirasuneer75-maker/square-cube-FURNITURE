@@ -1,0 +1,15 @@
+{
+  "/(public)/customize/page": "app/(public)/customize/page.js",
+  "/(public)/gallery/page": "app/(public)/gallery/page.js",
+  "/(public)/faq/page": "app/(public)/faq/page.js",
+  "/(public)/account/wishlist/page": "app/(public)/account/wishlist/page.js",
+  "/(public)/login/page": "app/(public)/login/page.js",
+  "/(public)/account/dashboard/page": "app/(public)/account/dashboard/page.js",
+  "/api/auth/login/route": "app/api/auth/login/route.js",
+  "/api/auth/logout/route": "app/api/auth/logout/route.js",
+  "/(auth)/admin/login/page": "app/(auth)/admin/login/page.js",
+  "/(admin)/admin/page": "app/(admin)/admin/page.js",
+  "/(admin)/admin/enquiries/page": "app/(admin)/admin/enquiries/page.js",
+  "/(admin)/admin/products/page": "app/(admin)/admin/products/page.js",
+  "/(admin)/admin/settings/page": "app/(admin)/admin/settings/page.js"
+}
