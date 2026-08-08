@@ -1,16 +1,16 @@
 import type { FastifyInstance } from "fastify";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { prisma }       from "../../lib/prisma";
+import { prisma } from "../../lib/prisma";
 import { requireAdmin } from "../../middlewares/auth";
 
 const COOKIE_NAME = "sc_admin_token";
 const COOKIE_OPTS = {
   httpOnly: true,
-  secure:   process.env.NODE_ENV === "production",
+  secure: process.env.NODE_ENV === "production",
   sameSite: "strict" as const,
-  path:     "/",
-  maxAge:   7 * 24 * 60 * 60, // 7 days in seconds
+  path: "/",
+  maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
 };
 
 export default async function adminAuthRoute(fastify: FastifyInstance) {
@@ -22,7 +22,7 @@ export default async function adminAuthRoute(fastify: FastifyInstance) {
       const { email, password } = request.body ?? {};
 
       const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
-      const ADMIN_HASH  = process.env.ADMIN_PASSWORD_HASH;
+      const ADMIN_HASH = process.env.ADMIN_PASSWORD_HASH;
 
       if (!ADMIN_EMAIL || !ADMIN_HASH) {
         fastify.log.error("[admin/auth] ADMIN_EMAIL or ADMIN_PASSWORD_HASH env var not set.");
@@ -33,7 +33,7 @@ export default async function adminAuthRoute(fastify: FastifyInstance) {
         return reply.status(400).send({ success: false, error: "Email and password are required." });
       }
 
-      const emailMatch    = email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+      const emailMatch = email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
       const passwordMatch = bcrypt.compareSync(password, ADMIN_HASH);
 
       if (!emailMatch || !passwordMatch) {
@@ -50,7 +50,7 @@ export default async function adminAuthRoute(fastify: FastifyInstance) {
         const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
         await prisma.adminSession.create({ data: { tokenHash, adminEmail: email, expiresAt } });
       } catch (err) {
-        fastify.log.warn("[admin/auth] Could not persist session:", err);
+        fastify.log.warn("[admin/auth] Could not persist session:", err as any);
       }
 
       reply.setCookie(COOKIE_NAME, token, COOKIE_OPTS);
@@ -66,7 +66,7 @@ export default async function adminAuthRoute(fastify: FastifyInstance) {
       const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
       await prisma.adminSession.updateMany({
         where: { tokenHash },
-        data:  { revokedAt: new Date() },
+        data: { revokedAt: new Date() },
       });
     }
     reply.clearCookie(COOKIE_NAME, { path: "/" });

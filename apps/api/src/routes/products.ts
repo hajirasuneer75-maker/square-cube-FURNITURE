@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { prisma }   from "../lib/prisma";
+import { prisma } from "../lib/prisma";
 import { requireAdmin } from "../middlewares/auth";
 
 export default async function productsRoute(fastify: FastifyInstance) {
@@ -7,19 +7,19 @@ export default async function productsRoute(fastify: FastifyInstance) {
   // ── GET /api/products ──────────────────────────────────────────────────────
   fastify.get("/", async (request) => {
     const q = request.query as Record<string, string>;
-    const page     = Math.max(1, parseInt(q.page ?? "1", 10));
+    const page = Math.max(1, parseInt(q.page ?? "1", 10));
     const pageSize = Math.min(50, parseInt(q.pageSize ?? "12", 10));
 
-    const where: Parameters<typeof prisma.product.findMany>[0]["where"] = {
+    const where: any = {
       isActive: true,
     };
 
-    if (q.category)  where.category    = { slug: q.category };
-    if (q.search)    where.OR           = [
-      { name:             { contains: q.search, mode: "insensitive" } },
+    if (q.category) where.category = { slug: q.category };
+    if (q.search) where.OR = [
+      { name: { contains: q.search, mode: "insensitive" } },
       { shortDescription: { contains: q.search, mode: "insensitive" } },
     ];
-    if (q.woodType)  where.woodVariants = { some: { woodType: { name: { equals: q.woodType, mode: "insensitive" } } } };
+    if (q.woodType) where.woodVariants = { some: { woodType: { name: { equals: q.woodType, mode: "insensitive" } } } };
     if (q.minPrice || q.maxPrice) {
       where.basePrice = {
         ...(q.minPrice ? { gte: parseFloat(q.minPrice) } : {}),
@@ -28,20 +28,20 @@ export default async function productsRoute(fastify: FastifyInstance) {
     }
 
     const orderBy =
-      q.sort === "price_asc"  ? { basePrice: "asc"  as const } :
-      q.sort === "price_desc" ? { basePrice: "desc" as const } :
-      q.sort === "newest"     ? { createdAt: "desc" as const } :
-      [{ isFeatured: "desc" as const }, { createdAt: "desc" as const }];
+      q.sort === "price_asc" ? { basePrice: "asc" as const } :
+        q.sort === "price_desc" ? { basePrice: "desc" as const } :
+          q.sort === "newest" ? { createdAt: "desc" as const } :
+            [{ isFeatured: "desc" as const }, { createdAt: "desc" as const }];
 
     const [products, total] = await prisma.$transaction([
       prisma.product.findMany({
         where,
         orderBy,
-        skip:  (page - 1) * pageSize,
-        take:  pageSize,
+        skip: (page - 1) * pageSize,
+        take: pageSize,
         include: {
-          category:     { select: { id: true, name: true, slug: true } },
-          images:       true,
+          category: { select: { id: true, name: true, slug: true } },
+          images: true,
           woodVariants: { include: { woodType: true } },
         },
       }),
@@ -50,16 +50,16 @@ export default async function productsRoute(fastify: FastifyInstance) {
 
     return {
       success: true,
-      data:    products,
-      meta:    { total, page, pageSize, totalPages: Math.ceil(total / pageSize) },
+      data: products,
+      meta: { total, page, pageSize, totalPages: Math.ceil(total / pageSize) },
     };
   });
 
   // ── GET /api/products/featured ─────────────────────────────────────────────
   fastify.get("/featured", async () => {
     const products = await prisma.product.findMany({
-      where:   { isActive: true, isFeatured: true },
-      take:    6,
+      where: { isActive: true, isFeatured: true },
+      take: 6,
       orderBy: { updatedAt: "desc" },
       include: { images: { where: { isPrimary: true } }, category: true, woodVariants: { include: { woodType: true } } },
     });
@@ -69,10 +69,10 @@ export default async function productsRoute(fastify: FastifyInstance) {
   // ── GET /api/products/:slug ────────────────────────────────────────────────
   fastify.get<{ Params: { slug: string } }>("/:slug", async (request, reply) => {
     const product = await prisma.product.findUnique({
-      where:   { slug: request.params.slug },
+      where: { slug: request.params.slug },
       include: {
-        category:     true,
-        images:       true,
+        category: true,
+        images: true,
         woodVariants: { include: { woodType: true } },
       },
     });
@@ -85,24 +85,24 @@ export default async function productsRoute(fastify: FastifyInstance) {
     const b = request.body as any;
     const product = await prisma.product.create({
       data: {
-        name:             b.name,
-        slug:             b.slug,
+        name: b.name,
+        slug: b.slug,
         shortDescription: b.shortDescription,
-        description:      b.description ?? b.shortDescription,
-        basePrice:        b.basePrice,
-        sku:              b.sku,
-        categoryId:       b.categoryId,
-        isFeatured:       b.isFeatured  ?? false,
-        isActive:         b.isActive    ?? true,
-        manufacturingTime:b.manufacturingTime,
-        deliveryTime:     b.deliveryTime,
-        warranty:         b.warranty,
-        tags:             b.tags ?? [],
+        description: b.description ?? b.shortDescription,
+        basePrice: b.basePrice,
+        sku: b.sku,
+        categoryId: b.categoryId,
+        isFeatured: b.isFeatured ?? false,
+        isActive: b.isActive ?? true,
+        manufacturingTime: b.manufacturingTime,
+        deliveryTime: b.deliveryTime,
+        warranty: b.warranty,
+        tags: b.tags ?? [],
         woodVariants: b.woodVariants ? {
           create: b.woodVariants.map((w: any) => ({
-            woodTypeId:       w.woodTypeId,
-            priceModifier:    w.priceModifier    ?? 0,
-            priceModifierType:w.priceModifierType ?? "FIXED_ADD",
+            woodTypeId: w.woodTypeId,
+            priceModifier: w.priceModifier ?? 0,
+            priceModifierType: w.priceModifierType ?? "FIXED_ADD",
           })),
         } : undefined,
       },
@@ -120,16 +120,16 @@ export default async function productsRoute(fastify: FastifyInstance) {
         const product = await prisma.product.update({
           where: { id: request.params.id },
           data: {
-            name:              b.name,
-            shortDescription:  b.shortDescription,
-            description:       b.description,
-            basePrice:         b.basePrice,
-            isFeatured:        b.isFeatured,
-            isActive:          b.isActive,
+            name: b.name,
+            shortDescription: b.shortDescription,
+            description: b.description,
+            basePrice: b.basePrice,
+            isFeatured: b.isFeatured,
+            isActive: b.isActive,
             manufacturingTime: b.manufacturingTime,
-            deliveryTime:      b.deliveryTime,
-            warranty:          b.warranty,
-            tags:              b.tags,
+            deliveryTime: b.deliveryTime,
+            warranty: b.warranty,
+            tags: b.tags,
           },
         });
         return { success: true, data: product };
