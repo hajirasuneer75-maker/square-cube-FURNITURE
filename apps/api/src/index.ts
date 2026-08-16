@@ -1,17 +1,17 @@
-import "./types"; // JWT type augmentation — must be first
+import "./types.js"; // JWT type augmentation — must be first
 import Fastify from "fastify";
-import cors        from "@fastify/cors";
-import jwt         from "@fastify/jwt";
-import cookie      from "@fastify/cookie";
-import multipart   from "@fastify/multipart";
+import cors from "@fastify/cors";
+import jwt from "@fastify/jwt";
+import cookie from "@fastify/cookie";
+import multipart from "@fastify/multipart";
 
-import productsRoute       from "./routes/products";
-import categoriesRoute     from "./routes/categories";
-import customOrdersRoute   from "./routes/custom-orders";
-import adminAuthRoute      from "./routes/admin/auth";
-import adminProductsRoute  from "./routes/admin/products";
+import productsRoute from "./routes/products";
+import categoriesRoute from "./routes/categories";
+import customOrdersRoute from "./routes/custom-orders";
+import adminAuthRoute from "./routes/admin/auth";
+import adminProductsRoute from "./routes/admin/products";
 import adminEnquiriesRoute from "./routes/admin/enquiries";
-import { prisma }          from "./lib/prisma";
+import { prisma } from "./lib/prisma";
 
 const isDev = process.env.NODE_ENV !== "production";
 
@@ -24,15 +24,15 @@ const server = Fastify({
 // ── Plugins ───────────────────────────────────────────────────────────────────
 
 await server.register(cors, {
-  origin:      process.env.FRONTEND_URL ?? "http://localhost:3000",
+  origin: process.env.FRONTEND_URL ?? "http://localhost:3000",
   credentials: true,
-  methods:     ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
 });
 
 await server.register(jwt, {
   secret: process.env.JWT_SECRET ?? "dev-secret-change-in-production",
   cookie: { cookieName: "sc_admin_token", signed: false },
-  sign:   { expiresIn: process.env.JWT_EXPIRES_IN ?? "7d" },
+  sign: { expiresIn: process.env.JWT_EXPIRES_IN ?? "7d" },
 });
 
 await server.register(cookie, {
@@ -45,19 +45,19 @@ await server.register(multipart, {
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 
-await server.register(productsRoute,       { prefix: "/api/products"        });
-await server.register(categoriesRoute,     { prefix: "/api/categories"      });
-await server.register(customOrdersRoute,   { prefix: "/api/custom-orders"   });
-await server.register(adminAuthRoute,      { prefix: "/api/admin/auth"      });
-await server.register(adminProductsRoute,  { prefix: "/api/admin/products"  });
+await server.register(productsRoute, { prefix: "/api/products" });
+await server.register(categoriesRoute, { prefix: "/api/categories" });
+await server.register(customOrdersRoute, { prefix: "/api/custom-orders" });
+await server.register(adminAuthRoute, { prefix: "/api/admin/auth" });
+await server.register(adminProductsRoute, { prefix: "/api/admin/products" });
 await server.register(adminEnquiriesRoute, { prefix: "/api/admin/enquiries" });
 
 // ── Health check ──────────────────────────────────────────────────────────────
 
 server.get("/health", async () => ({
-  status:    "ok",
+  status: "ok",
   timestamp: new Date().toISOString(),
-  env:       process.env.NODE_ENV,
+  env: process.env.NODE_ENV,
 }));
 
 // ── Graceful shutdown ─────────────────────────────────────────────────────────
@@ -69,7 +69,7 @@ const shutdown = async (signal: string) => {
   process.exit(0);
 };
 
-process.on("SIGINT",  () => shutdown("SIGINT"));
+process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 
 // ── Start ─────────────────────────────────────────────────────────────────────
