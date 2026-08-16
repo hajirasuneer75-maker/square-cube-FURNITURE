@@ -1,8 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import type { MultipartFile } from "@fastify/multipart";
-import { prisma }        from "../lib/prisma";
-import { uploadBuffer }  from "../lib/cloudinary";
-import { requireAdmin }  from "../middlewares/auth";
+import { prisma }        from "../lib/prisma.js";
+import { uploadBuffer }  from "../lib/cloudinary.js";
+import { requireAdmin }  from "../middlewares/auth.js";
 
 export default async function customOrdersRoute(fastify: FastifyInstance) {
 

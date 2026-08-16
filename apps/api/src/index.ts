@@ -5,13 +5,13 @@ import jwt from "@fastify/jwt";
 import cookie from "@fastify/cookie";
 import multipart from "@fastify/multipart";
 
-import productsRoute from "./routes/products";
-import categoriesRoute from "./routes/categories";
-import customOrdersRoute from "./routes/custom-orders";
-import adminAuthRoute from "./routes/admin/auth";
-import adminProductsRoute from "./routes/admin/products";
-import adminEnquiriesRoute from "./routes/admin/enquiries";
-import { prisma } from "./lib/prisma";
+import productsRoute from "./routes/products.js";
+import categoriesRoute from "./routes/categories.js";
+import customOrdersRoute from "./routes/custom-orders.js";
+import adminAuthRoute from "./routes/admin/auth.js";
+import adminProductsRoute from "./routes/admin/products.js";
+import adminEnquiriesRoute from "./routes/admin/enquiries.js";
+import { prisma } from "./lib/prisma.js";
 
 const isDev = process.env.NODE_ENV !== "production";
 

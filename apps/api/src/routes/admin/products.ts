@@ -1,8 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import type { MultipartFile } from "@fastify/multipart";
-import { prisma }       from "../../lib/prisma";
-import { uploadBuffer } from "../../lib/cloudinary";
-import { requireAdmin } from "../../middlewares/auth";
+import { prisma }       from "../../lib/prisma.js";
+import { uploadBuffer } from "../../lib/cloudinary.js";
+import { requireAdmin } from "../../middlewares/auth.js";
 
 // Admin product routes — all require JWT auth.
 // The public CRUD lives in routes/products.ts (POST/PUT/DELETE are also admin-only there).

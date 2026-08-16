@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
-import { prisma }       from "../../lib/prisma";
-import { requireAdmin } from "../../middlewares/auth";
+import { prisma }       from "../../lib/prisma.js";
+import { requireAdmin } from "../../middlewares/auth.js";
 
 export default async function adminEnquiriesRoute(fastify: FastifyInstance) {
 

@@ -1,8 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { prisma } from "../../lib/prisma";
-import { requireAdmin } from "../../middlewares/auth";
+import { prisma } from "../../lib/prisma.js";
+import { requireAdmin } from "../../middlewares/auth.js";
 
 const COOKIE_NAME = "sc_admin_token";
 const COOKIE_OPTS = {
