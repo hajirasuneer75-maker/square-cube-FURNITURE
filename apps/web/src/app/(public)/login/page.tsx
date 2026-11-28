@@ -4,7 +4,7 @@ import { MessageCircle } from "lucide-react";
 import WAButton from "@/components/ui/WAButton";
 
 export const metadata: Metadata = {
-  title:  "Sign In | Square Cube",
+  title:  "Sign In",
   robots: { index: false },
 };
 
@@ -14,7 +14,7 @@ export default function LoginPage() {
       <div className="max-w-md mx-auto text-center">
         <p className="section-label mb-3">My Account</p>
         <h1 className="font-display text-3xl font-semibold text-stone-900 mb-3">
-          Welcome to Square Cube
+          Welcome to Square Cube Furniture
         </h1>
         <p className="text-stone-500 text-sm mb-10 leading-relaxed">
           We&apos;re a made-to-order furniture studio — all orders and queries are handled personally via
@@ -35,7 +35,7 @@ export default function LoginPage() {
             View My Wishlist
           </Link>
           <WAButton
-            text="Hello Square Cube!"
+            text="Hello Square Cube Furniture!"
             className="btn-whatsapp w-full justify-center"
           >
             <MessageCircle size={16} />

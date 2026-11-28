@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import LoginForm from "@/components/admin/LoginForm";
 
 export const metadata: Metadata = {
-  title: "Admin Login — Square Cube",
+  title: "Admin Login",
   robots: { index: false, follow: false },
 };
 
@@ -11,10 +11,10 @@ export default function AdminLoginPage() {
     <div className="w-full max-w-md px-4">
       {/* Logo / brand */}
       <div className="text-center mb-8">
-        <h1 className="font-display text-3xl font-bold text-stone-900 tracking-tight">
-          Square Cube
+        <h1 className="font-display text-3xl font-bold text-espresso tracking-tight">
+          Square Cube Furniture
         </h1>
-        <p className="mt-1 text-sm text-stone-500">Admin Dashboard</p>
+        <p className="mt-1 text-sm text-espresso/60 font-ui">Admin Studio Dashboard</p>
       </div>
 
       <LoginForm />

@@ -3,397 +3,407 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import {
-  X, MessageCircle, Phone, Mail, MapPin, Package,
-  Calendar, Eye, ChevronDown,
+  X,
+  MessageCircle,
+  Phone,
+  Mail,
+  MapPin,
+  Calendar,
+  Wrench,
+  Sparkles,
 } from "lucide-react";
+import type { MaintenanceTicket } from "@/types";
 import { cn } from "@/lib/utils";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type Status = "new" | "in-progress" | "quoted" | "completed";
-
-interface Enquiry {
+interface CustomEnquiryRecord {
   id: string;
   createdAt: string;
   name: string;
   phone: string;
-  email: string;
-  city: string;
+  email?: string | null;
+  city?: string | null;
   furnitureType: string;
-  woodType: string;
+  woodType?: string | null;
   budgetRange: string;
-  length: string;
-  width: string;
-  height: string;
+  length?: string | null;
+  width?: string | null;
+  height?: string | null;
   description: string;
   referenceImages: string[];
-  status: Status;
+  status: string;
+  adminNotes?: string | null;
 }
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
-
-const MOCK_ENQUIRIES: Enquiry[] = [
-  {
-    id: "ENQ-001",
-    createdAt: "2025-12-15T10:30:00Z",
-    name: "Priya Sharma",
-    phone: "9876543210",
-    email: "priya@example.com",
-    city: "Mumbai",
-    furnitureType: "Bedroom",
-    woodType: "Teak",
-    budgetRange: "₹50,000 – ₹1,00,000",
-    length: "200", width: "180", height: "120",
-    description:
-      "I need a custom king-size bed with hydraulic storage drawers underneath and a matching side table. Prefer teak with a natural polish finish and carved headboard.",
-    referenceImages: [
-      "https://images.unsplash.com/photo-1505693314120-0d443867891c?w=400&h=300&fit=crop",
-    ],
-    status: "new",
-  },
-  {
-    id: "ENQ-002",
-    createdAt: "2025-12-14T14:00:00Z",
-    name: "Arjun Mehta",
-    phone: "8765432109",
-    email: "",
-    city: "Delhi",
-    furnitureType: "Office",
-    woodType: "Sheesham",
-    budgetRange: "₹20,000 – ₹50,000",
-    length: "150", width: "75", height: "75",
-    description:
-      "L-shaped executive desk with cable management channels and a built-in drawer pedestal. Modern minimalist design preferred. Sheesham with walnut stain.",
-    referenceImages: [],
-    status: "in-progress",
-  },
-  {
-    id: "ENQ-003",
-    createdAt: "2025-12-13T09:15:00Z",
-    name: "Kavita Patel",
-    phone: "7654321098",
-    email: "kavita.p@gmail.com",
-    city: "Bangalore",
-    furnitureType: "Dining Room",
-    woodType: "Oak",
-    budgetRange: "₹1,00,000 – ₹2,00,000",
-    length: "220", width: "100", height: "78",
-    description:
-      "8-seater dining table for our new home. Solid oak, dark walnut stain, brass hairpin legs. We saw something similar at a café in Indiranagar.",
-    referenceImages: [
-      "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&h=300&fit=crop",
-      "https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=400&h=300&fit=crop",
-    ],
-    status: "quoted",
-  },
-  {
-    id: "ENQ-004",
-    createdAt: "2025-12-10T16:45:00Z",
-    name: "Rohit Singhania",
-    phone: "9543210876",
-    email: "",
-    city: "Hyderabad",
-    furnitureType: "Wardrobes",
-    woodType: "MDF",
-    budgetRange: "₹50,000 – ₹1,00,000",
-    length: "240", width: "60", height: "240",
-    description:
-      "3-panel sliding wardrobe with full-length mirror, acrylic gloss shutters, internal shoe rack, and hanging rods. Floor-to-ceiling height.",
-    referenceImages: [],
-    status: "completed",
-  },
-];
-
-// ─── Status config ────────────────────────────────────────────────────────────
-
-const STATUS_CONFIG: Record<Status, { label: string; classes: string }> = {
-  "new":         { label: "New",         classes: "bg-blue-100 text-blue-700"   },
-  "in-progress": { label: "In Progress", classes: "bg-amber-100 text-amber-700" },
-  "quoted":      { label: "Quoted",      classes: "bg-orange-100 text-orange-700"},
-  "completed":   { label: "Completed",   classes: "bg-green-100 text-green-700" },
-};
-
-const ALL_STATUSES: Status[] = ["new", "in-progress", "quoted", "completed"];
+const ENQUIRY_STATUSES = ["PENDING", "IN_PROGRESS", "QUOTED", "COMPLETED", "REJECTED"];
+const TICKET_STATUSES = ["OPEN", "IN_PROGRESS", "COMPLETED", "CANCELLED"];
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  return new Date(iso).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+function formatCustomerWa(phone: string, text: string) {
+  const digits = phone.replace(/\D/g, "").replace(/^0/, "");
+  const full = digits.length === 10 ? `91${digits}` : digits;
+  return `https://wa.me/${full}?text=${encodeURIComponent(text)}`;
+}
 
 export default function EnquiriesManager() {
-  const [enquiries, setEnquiries]   = useState<Enquiry[]>(MOCK_ENQUIRIES);
+  const [tab, setTab] = useState<"enquiries" | "maintenance">("enquiries");
+  const [enquiries, setEnquiries] = useState<CustomEnquiryRecord[]>([]);
+  const [tickets, setTickets] = useState<MaintenanceTicket[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<Status | "all">("all");
+  const [loading, setLoading] = useState(true);
 
-  // Merge real submissions from localStorage with mock data
-  useEffect(() => {
+  async function loadAll() {
+    setLoading(true);
     try {
-      const stored = localStorage.getItem("sc-enquiries");
-      if (stored) {
-        const real = JSON.parse(stored) as Enquiry[];
-        const mockIds = new Set(MOCK_ENQUIRIES.map((e) => e.id));
-        const fresh = real.filter((e) => !mockIds.has(e.id));
-        if (fresh.length > 0) {
-          setEnquiries([...fresh, ...MOCK_ENQUIRIES]);
-        }
+      const [enqRes, maintRes] = await Promise.all([
+        fetch("/api/proxy/admin/enquiries?pageSize=50"),
+        fetch("/api/proxy/maintenance?pageSize=50"),
+      ]);
+      const enqJson = enqRes.ok ? await enqRes.json() : null;
+      const maintJson = maintRes.ok ? await maintRes.json() : null;
+
+      let dbEnq: CustomEnquiryRecord[] = enqJson?.success ? enqJson.data : [];
+      let dbTickets: MaintenanceTicket[] = maintJson?.success ? maintJson.data : [];
+
+      // Merge any offline localStorage entries if DB wasn't reached during submission
+      try {
+        const localEnq = JSON.parse(localStorage.getItem("sc-enquiries") ?? "[]") as CustomEnquiryRecord[];
+        const dbIds = new Set(dbEnq.map((e) => e.id));
+        const extraEnq = localEnq.filter((e) => !dbIds.has(e.id));
+        if (dbEnq.length === 0) dbEnq = extraEnq;
+
+        const localMaint = JSON.parse(localStorage.getItem("sc-maintenance") ?? "[]") as MaintenanceTicket[];
+        const tIds = new Set(dbTickets.map((t) => t.id));
+        const extraMaint = localMaint.filter((t) => !tIds.has(t.id));
+        if (dbTickets.length === 0) dbTickets = extraMaint;
+      } catch {
+        // ignore
       }
-    } catch { /* localStorage unavailable */ }
-  }, []);
 
-  const filtered =
-    statusFilter === "all"
-      ? enquiries
-      : enquiries.filter((e) => e.status === statusFilter);
-
-  const selected = enquiries.find((e) => e.id === selectedId) ?? null;
-
-  function updateStatus(id: string, status: Status) {
-    setEnquiries((prev) => prev.map((e) => (e.id === id ? { ...e, status } : e)));
-    if (selected?.id === id) {
-      setSelectedId(id); // keep panel open
+      setEnquiries(dbEnq);
+      setTickets(dbTickets);
+    } finally {
+      setLoading(false);
     }
   }
 
-  const counts: Record<Status | "all", number> = {
-    all:          enquiries.length,
-    "new":         enquiries.filter((e) => e.status === "new").length,
-    "in-progress": enquiries.filter((e) => e.status === "in-progress").length,
-    "quoted":      enquiries.filter((e) => e.status === "quoted").length,
-    "completed":   enquiries.filter((e) => e.status === "completed").length,
-  };
+  useEffect(() => {
+    loadAll();
+  }, []);
+
+  async function updateEnquiryStatus(id: string, status: string) {
+    setEnquiries((prev) => prev.map((e) => (e.id === id ? { ...e, status } : e)));
+    await fetch(`/api/proxy/admin/enquiries/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    }).catch(() => {});
+  }
+
+  async function updateTicketStatus(id: string, status: MaintenanceTicket["status"]) {
+    setTickets((prev) => prev.map((t) => (t.id === id ? { ...t, status } : t)));
+    await fetch(`/api/proxy/maintenance/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    }).catch(() => {});
+  }
+
+  const selectedEnquiry = tab === "enquiries" ? enquiries.find((e) => e.id === selectedId) ?? null : null;
+  const selectedTicket = tab === "maintenance" ? tickets.find((t) => t.id === selectedId) ?? null : null;
 
   return (
-    <div className="p-6 lg:p-8 flex gap-6 h-full">
-
-      {/* Left: Table */}
+    <div className="p-6 lg:p-8 flex gap-6 h-full bg-alabaster min-h-full">
       <div className="flex-1 min-w-0">
-        <div className="mb-6">
-          <h1 className="text-xl font-semibold text-stone-900">Custom Enquiries</h1>
-          <p className="text-sm text-stone-500 mt-0.5">{enquiries.length} total requests</p>
-        </div>
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <div>
+            <p className="section-label mb-1">Square Cube Furniture · Concierge Hub</p>
+            <h1 className="text-2xl font-display font-semibold text-espresso">
+              Enquiries &amp; Maintenance Hub
+            </h1>
+          </div>
 
-        {/* Status filter tabs */}
-        <div className="flex gap-1 mb-5 border-b border-stone-200">
-          {(["all", ...ALL_STATUSES] as const).map((s) => (
+          <div className="inline-flex border border-warm-border bg-white p-1">
             <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
+              onClick={() => {
+                setTab("enquiries");
+                setSelectedId(null);
+              }}
               className={cn(
-                "px-3 py-2 text-xs font-semibold -mb-px border-b-2 transition-colors capitalize whitespace-nowrap",
-                statusFilter === s
-                  ? "border-stone-900 text-stone-900"
-                  : "border-transparent text-stone-400 hover:text-stone-700"
+                "flex items-center gap-2 px-4 py-2 text-xs font-ui font-semibold uppercase tracking-wider transition-colors",
+                tab === "enquiries" ? "bg-espresso text-white" : "text-espresso/60 hover:text-espresso"
               )}
             >
-              {s === "all" ? "All" : STATUS_CONFIG[s].label}
-              <span className={cn(
-                "ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold",
-                statusFilter === s ? "bg-stone-900 text-white" : "bg-stone-100 text-stone-500"
-              )}>
-                {counts[s]}
-              </span>
+              <Sparkles size={13} /> Custom Enquiries ({enquiries.length})
             </button>
-          ))}
+            <button
+              onClick={() => {
+                setTab("maintenance");
+                setSelectedId(null);
+              }}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 text-xs font-ui font-semibold uppercase tracking-wider transition-colors",
+                tab === "maintenance" ? "bg-espresso text-white" : "text-espresso/60 hover:text-espresso"
+              )}
+            >
+              <Wrench size={13} /> Maintenance Tickets ({tickets.length})
+            </button>
+          </div>
         </div>
 
-        {/* Table */}
-        <div className="border border-stone-200 bg-white overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="border-b border-stone-200 bg-stone-50">
-              <tr>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wider">Customer</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wider">Request</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wider">Budget</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wider">Status</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wider">Date</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-stone-100">
-              {filtered.map((e) => (
-                <tr
-                  key={e.id}
-                  className={cn(
-                    "hover:bg-stone-50 transition-colors cursor-pointer",
-                    selectedId === e.id && "bg-stone-50 border-l-2 border-l-stone-900"
-                  )}
-                  onClick={() => setSelectedId(e.id === selectedId ? null : e.id)}
-                >
-                  {/* Customer */}
-                  <td className="px-4 py-3">
-                    <p className="font-medium text-stone-900">{e.name}</p>
-                    <p className="text-xs text-stone-400">{e.city || "—"}</p>
-                  </td>
-                  {/* Request */}
-                  <td className="px-4 py-3">
-                    <p className="text-stone-700">{e.furnitureType}</p>
-                    <p className="text-xs text-stone-400">{e.woodType || "Any wood"}</p>
-                  </td>
-                  {/* Budget */}
-                  <td className="px-4 py-3 text-stone-600 text-xs">{e.budgetRange}</td>
-                  {/* Status */}
-                  <td className="px-4 py-3">
-                    <span className={cn(
-                      "text-[11px] font-semibold px-2 py-0.5",
-                      STATUS_CONFIG[e.status].classes
-                    )}>
-                      {STATUS_CONFIG[e.status].label}
-                    </span>
-                  </td>
-                  {/* Date */}
-                  <td className="px-4 py-3 text-xs text-stone-400">{formatDate(e.createdAt)}</td>
-                  {/* View */}
-                  <td className="px-4 py-3">
-                    <Eye size={15} className={cn(
-                      "transition-colors",
-                      selectedId === e.id ? "text-stone-900" : "text-stone-300"
-                    )} />
-                  </td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
+        <div className="border border-warm-border bg-white overflow-x-auto shadow-luxury">
+          {loading ? (
+            <div className="py-12 text-center text-sm font-ui text-espresso/50">Loading records…</div>
+          ) : tab === "enquiries" ? (
+            <table className="w-full text-sm font-ui">
+              <thead className="border-b border-warm-border bg-alabaster">
                 <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center text-sm text-stone-400">
-                    No enquiries in this category.
-                  </td>
+                  <th className="text-left px-4 py-3 text-[11px] font-semibold text-espresso/55 uppercase">Customer</th>
+                  <th className="text-left px-4 py-3 text-[11px] font-semibold text-espresso/55 uppercase">Piece &amp; Wood</th>
+                  <th className="text-left px-4 py-3 text-[11px] font-semibold text-espresso/55 uppercase">Estimate / Budget</th>
+                  <th className="text-left px-4 py-3 text-[11px] font-semibold text-espresso/55 uppercase">Status</th>
+                  <th className="text-left px-4 py-3 text-[11px] font-semibold text-espresso/55 uppercase">Date</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-warm-border">
+                {enquiries.map((e) => (
+                  <tr
+                    key={e.id}
+                    onClick={() => setSelectedId(e.id === selectedId ? null : e.id)}
+                    className={cn(
+                      "hover:bg-alabaster/70 cursor-pointer transition-colors",
+                      selectedId === e.id && "bg-bronze-50"
+                    )}
+                  >
+                    <td className="px-4 py-3">
+                      <p className="font-semibold text-espresso">{e.name}</p>
+                      <p className="text-xs text-espresso/50">{e.city || e.phone}</p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="text-espresso">{e.furnitureType}</p>
+                      <p className="text-xs text-espresso/50">{e.woodType || "Any wood"}</p>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-espresso/75">{e.budgetRange}</td>
+                    <td className="px-4 py-3">
+                      <span className="text-[11px] font-semibold px-2 py-0.5 bg-alabaster border border-warm-border text-espresso">
+                        {e.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-espresso/45">{formatDate(e.createdAt)}</td>
+                  </tr>
+                ))}
+                {enquiries.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-12 text-center text-espresso/45">
+                      No custom enquiries yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          ) : (
+            <table className="w-full text-sm font-ui">
+              <thead className="border-b border-warm-border bg-alabaster">
+                <tr>
+                  <th className="text-left px-4 py-3 text-[11px] font-semibold text-espresso/55 uppercase">Customer</th>
+                  <th className="text-left px-4 py-3 text-[11px] font-semibold text-espresso/55 uppercase">Service &amp; Item</th>
+                  <th className="text-left px-4 py-3 text-[11px] font-semibold text-espresso/55 uppercase">Preferred Date</th>
+                  <th className="text-left px-4 py-3 text-[11px] font-semibold text-espresso/55 uppercase">Status</th>
+                  <th className="text-left px-4 py-3 text-[11px] font-semibold text-espresso/55 uppercase">Created</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-warm-border">
+                {tickets.map((t) => (
+                  <tr
+                    key={t.id}
+                    onClick={() => setSelectedId(t.id === selectedId ? null : t.id)}
+                    className={cn(
+                      "hover:bg-alabaster/70 cursor-pointer transition-colors",
+                      selectedId === t.id && "bg-bronze-50"
+                    )}
+                  >
+                    <td className="px-4 py-3">
+                      <p className="font-semibold text-espresso">{t.name}</p>
+                      <p className="text-xs text-espresso/50">{t.city || t.phone}</p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="text-espresso">{t.serviceType.replace(/_/g, " ")}</p>
+                      <p className="text-xs text-espresso/50">{t.furnitureItem}</p>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-espresso/75">{t.preferredDate || "Flexible"}</td>
+                    <td className="px-4 py-3">
+                      <span className="text-[11px] font-semibold px-2 py-0.5 bg-alabaster border border-warm-border text-espresso">
+                        {t.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-espresso/45">{formatDate(t.createdAt)}</td>
+                  </tr>
+                ))}
+                {tickets.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-12 text-center text-espresso/45">
+                      No maintenance tickets yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
 
-      {/* Right: Detail panel */}
-      {selected && (
-        <div className="w-80 xl:w-96 flex-shrink-0 border border-stone-200 bg-white overflow-y-auto flex flex-col">
-          {/* Panel header */}
-          <div className="flex items-center justify-between px-4 py-3.5 border-b border-stone-200 bg-stone-50 sticky top-0">
+      {/* Detail Side Panel */}
+      {(selectedEnquiry || selectedTicket) && (
+        <div className="w-80 xl:w-96 flex-shrink-0 border border-warm-border bg-white flex flex-col shadow-luxury">
+          <div className="flex items-center justify-between px-4 py-3.5 border-b border-warm-border bg-alabaster">
             <div>
-              <p className="text-xs font-mono font-semibold text-stone-500">{selected.id}</p>
-              <p className="font-semibold text-stone-900 text-sm">{selected.name}</p>
+              <p className="text-[11px] font-mono text-champagne">
+                {(selectedEnquiry || selectedTicket)!.id.slice(-8).toUpperCase()}
+              </p>
+              <p className="font-display text-lg font-semibold text-espresso">
+                {(selectedEnquiry || selectedTicket)!.name}
+              </p>
             </div>
-            <button
-              onClick={() => setSelectedId(null)}
-              className="p-1.5 hover:bg-stone-200 transition-colors"
-            >
+            <button onClick={() => setSelectedId(null)} className="p-1.5 hover:bg-warm-border/50">
               <X size={15} />
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
+          <div className="flex-1 overflow-y-auto p-4 space-y-5 font-ui text-sm">
+            {selectedEnquiry && (
+              <>
+                <div>
+                  <label className="detail-section-label">Status</label>
+                  <select
+                    value={selectedEnquiry.status}
+                    onChange={(e) => updateEnquiryStatus(selectedEnquiry.id, e.target.value)}
+                    className="input-luxury py-2 text-xs font-semibold"
+                  >
+                    {ENQUIRY_STATUSES.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
 
-            {/* Status update */}
-            <div>
-              <p className="detail-section-label">Status</p>
-              <div className="relative">
-                <select
-                  value={selected.status}
-                  onChange={(e) => updateStatus(selected.id, e.target.value as Status)}
-                  className={cn(
-                    "w-full border px-3 py-2 text-sm font-medium appearance-none pr-8 focus:outline-none",
-                    STATUS_CONFIG[selected.status].classes
+                <div className="space-y-1.5 text-xs">
+                  <p className="flex items-center gap-2"><Phone size={12} /> {selectedEnquiry.phone}</p>
+                  {selectedEnquiry.email && <p className="flex items-center gap-2"><Mail size={12} /> {selectedEnquiry.email}</p>}
+                  {selectedEnquiry.city && <p className="flex items-center gap-2"><MapPin size={12} /> {selectedEnquiry.city}</p>}
+                  <p className="flex items-center gap-2"><Calendar size={12} /> {formatDate(selectedEnquiry.createdAt)}</p>
+                </div>
+
+                <div className="p-3 bg-alabaster border border-warm-border text-xs space-y-1">
+                  <p><strong>Furniture:</strong> {selectedEnquiry.furnitureType}</p>
+                  {selectedEnquiry.woodType && <p><strong>Wood:</strong> {selectedEnquiry.woodType}</p>}
+                  <p><strong>Estimate / Budget:</strong> {selectedEnquiry.budgetRange}</p>
+                  {(selectedEnquiry.length || selectedEnquiry.width || selectedEnquiry.height) && (
+                    <p>
+                      <strong>Dimensions:</strong> {selectedEnquiry.length} × {selectedEnquiry.width} × {selectedEnquiry.height}
+                    </p>
                   )}
+                </div>
+
+                <div>
+                  <p className="detail-section-label">Description</p>
+                  <p className="text-xs text-espresso/80 leading-relaxed">{selectedEnquiry.description}</p>
+                </div>
+
+                {selectedEnquiry.referenceImages?.length > 0 && (
+                  <div>
+                    <p className="detail-section-label">Customer Photos</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {selectedEnquiry.referenceImages.map((url, idx) => (
+                        <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="relative aspect-video border border-warm-border overflow-hidden">
+                          <Image src={url} alt="" fill sizes="160px" className="object-cover" />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <a
+                  href={formatCustomerWa(
+                    selectedEnquiry.phone,
+                    `Hello ${selectedEnquiry.name}! This is Square Cube Furniture following up on your custom ${selectedEnquiry.furnitureType} request.`
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-whatsapp w-full py-2.5 text-xs"
                 >
-                  {ALL_STATUSES.map((s) => (
-                    <option key={s} value={s}>{STATUS_CONFIG[s].label}</option>
-                  ))}
-                </select>
-                <ChevronDown size={12} className="absolute right-2.5 top-3 pointer-events-none opacity-60" />
-              </div>
-            </div>
-
-            {/* Contact */}
-            <div>
-              <p className="detail-section-label">Contact</p>
-              <div className="space-y-2">
-                <DetailRow icon={Phone} value={selected.phone} />
-                {selected.email && <DetailRow icon={Mail} value={selected.email} />}
-                {selected.city  && <DetailRow icon={MapPin} value={selected.city}  />}
-                <DetailRow icon={Calendar} value={formatDate(selected.createdAt)} />
-              </div>
-            </div>
-
-            {/* Furniture */}
-            <div>
-              <p className="detail-section-label">Furniture Details</p>
-              <div className="space-y-1.5 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-stone-400">Type</span>
-                  <span className="font-medium text-stone-800">{selected.furnitureType}</span>
-                </div>
-                {selected.woodType && (
-                  <div className="flex justify-between">
-                    <span className="text-stone-400">Wood</span>
-                    <span className="font-medium text-stone-800">{selected.woodType}</span>
-                  </div>
-                )}
-                <div className="flex justify-between">
-                  <span className="text-stone-400">Budget</span>
-                  <span className="font-medium text-stone-800">{selected.budgetRange}</span>
-                </div>
-                {(selected.length || selected.width || selected.height) && (
-                  <div className="flex justify-between">
-                    <span className="text-stone-400">Size (cm)</span>
-                    <span className="font-medium text-stone-800 text-xs">
-                      {[
-                        selected.length && `L ${selected.length}`,
-                        selected.width  && `W ${selected.width}`,
-                        selected.height && `H ${selected.height}`,
-                      ].filter(Boolean).join(" × ")}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Description */}
-            <div>
-              <p className="detail-section-label">Description</p>
-              <p className="text-sm text-stone-700 leading-relaxed">{selected.description}</p>
-            </div>
-
-            {/* Reference images */}
-            {selected.referenceImages.length > 0 && (
-              <div>
-                <p className="detail-section-label">Reference Images ({selected.referenceImages.length})</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {selected.referenceImages.map((url, idx) => (
-                    <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="block relative aspect-video bg-stone-100 border border-stone-200 overflow-hidden hover:opacity-90 transition-opacity">
-                      <Image src={url} alt={`Reference ${idx + 1}`} fill sizes="150px" className="object-cover" />
-                    </a>
-                  ))}
-                </div>
-              </div>
+                  <MessageCircle size={15} /> Reply on WhatsApp
+                </a>
+              </>
             )}
 
-          </div>
+            {selectedTicket && (
+              <>
+                <div>
+                  <label className="detail-section-label">Ticket Status</label>
+                  <select
+                    value={selectedTicket.status}
+                    onChange={(e) =>
+                      updateTicketStatus(selectedTicket.id, e.target.value as MaintenanceTicket["status"])
+                    }
+                    className="input-luxury py-2 text-xs font-semibold"
+                  >
+                    {TICKET_STATUSES.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
 
-          {/* Panel footer actions */}
-          <div className="px-4 py-4 border-t border-stone-200 space-y-2">
-            <a
-              href={`https://wa.me/${selected.phone.replace(/\D/g, "").replace(/^0/, "91")}?text=${encodeURIComponent(`Hello ${selected.name}! This is Square Cube regarding your custom furniture enquiry (${selected.id}).`)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-whatsapp text-xs py-2.5 w-full"
-            >
-              <MessageCircle size={15} />
-              Reply on WhatsApp
-            </a>
+                <div className="space-y-1.5 text-xs">
+                  <p className="flex items-center gap-2"><Phone size={12} /> {selectedTicket.phone}</p>
+                  {selectedTicket.email && <p className="flex items-center gap-2"><Mail size={12} /> {selectedTicket.email}</p>}
+                  {selectedTicket.city && <p className="flex items-center gap-2"><MapPin size={12} /> {selectedTicket.city}</p>}
+                  <p className="flex items-center gap-2"><Calendar size={12} /> Visit Date: {selectedTicket.preferredDate || "Flexible"}</p>
+                </div>
+
+                <div className="p-3 bg-alabaster border border-warm-border text-xs space-y-1">
+                  <p><strong>Service:</strong> {selectedTicket.serviceType.replace(/_/g, " ")}</p>
+                  <p><strong>Item:</strong> {selectedTicket.furnitureItem}</p>
+                </div>
+
+                <div>
+                  <p className="detail-section-label">Issue Description</p>
+                  <p className="text-xs text-espresso/80 leading-relaxed">{selectedTicket.issueDescription}</p>
+                </div>
+
+                {selectedTicket.damagePhotos?.length > 0 && (
+                  <div>
+                    <p className="detail-section-label">Damage Photos</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {selectedTicket.damagePhotos.map((url, idx) => (
+                        <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="relative aspect-video border border-warm-border overflow-hidden">
+                          <Image src={url} alt="" fill sizes="160px" className="object-cover" />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <a
+                  href={formatCustomerWa(
+                    selectedTicket.phone,
+                    `Hello ${selectedTicket.name}! This is Square Cube Furniture regarding your ${selectedTicket.serviceType.replace(/_/g, " ").toLowerCase()} service ticket for ${selectedTicket.furnitureItem}.`
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-whatsapp w-full py-2.5 text-xs"
+                >
+                  <MessageCircle size={15} /> Reply on WhatsApp
+                </a>
+              </>
+            )}
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-// ─── Tiny helpers ─────────────────────────────────────────────────────────────
-
-function DetailRow({ icon: Icon, value }: { icon: React.ElementType; value: string }) {
-  return (
-    <div className="flex items-center gap-2 text-sm">
-      <Icon size={13} className="text-stone-400 flex-shrink-0" />
-      <span className="text-stone-700">{value}</span>
     </div>
   );
 }

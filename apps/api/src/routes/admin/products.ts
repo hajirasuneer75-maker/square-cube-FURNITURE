@@ -1,21 +1,41 @@
 import type { FastifyInstance } from "fastify";
 import type { MultipartFile } from "@fastify/multipart";
-import { prisma }       from "../../lib/prisma.js";
-import { uploadBuffer } from "../../lib/cloudinary.js";
+import { prisma } from "../../lib/prisma.js";
+import { uploadBuffer, isCloudinaryConfigured } from "../../lib/cloudinary.js";
 import { requireAdmin } from "../../middlewares/auth.js";
 
-// Admin product routes — all require JWT auth.
-// The public CRUD lives in routes/products.ts (POST/PUT/DELETE are also admin-only there).
-// This file adds admin-specific endpoints: image upload and wood variant management.
-
 export default async function adminProductsRoute(fastify: FastifyInstance) {
+  // ── GET /api/admin/products ───────────────────────────────────────────────
+  // List ALL products (active & inactive) for Admin Dashboard
+  fastify.get("/", { preHandler: [requireAdmin] }, async () => {
+    const products = await prisma.product.findMany({
+      orderBy: [{ isFeatured: "desc" }, { createdAt: "desc" }],
+      include: {
+        category: { select: { id: true, name: true, slug: true } },
+        images: true,
+        woodVariants: { include: { woodType: true } },
+      },
+    });
+    return { success: true, data: products };
+  });
+
+  // ── GET /api/admin/products/wood-types ────────────────────────────────────
+  fastify.get("/wood-types", { preHandler: [requireAdmin] }, async () => {
+    const woodTypes = await prisma.woodType.findMany({ orderBy: { name: "asc" } });
+    return { success: true, data: woodTypes };
+  });
 
   // ── POST /api/admin/products/:id/images ───────────────────────────────────
-  // Upload one or more product images to Cloudinary
   fastify.post<{ Params: { id: string } }>(
     "/:id/images",
     { preHandler: [requireAdmin] },
     async (request, reply) => {
+      if (!isCloudinaryConfigured()) {
+        return reply.status(503).send({
+          success: false,
+          error: "Cloudinary is not configured. Add image URL directly or configure Cloudinary credentials.",
+        });
+      }
       const { id } = request.params;
       const parts = request.parts();
       const created = [];
@@ -25,15 +45,14 @@ export default async function adminProductsRoute(fastify: FastifyInstance) {
         const file = part as MultipartFile;
 
         const buffer = await file.toBuffer();
-        const url    = await uploadBuffer(buffer, file.filename, `products/${id}`);
+        const url = await uploadBuffer(buffer, `${Date.now()}-${file.filename}`, `products/${id}`);
         const isPrimary = (part as any).fields?.isPrimary?.value === "true";
-        const angle     = ((part as any).fields?.angle?.value ?? "FRONT") as any;
+        const angle = ((part as any).fields?.angle?.value ?? "FRONT") as any;
 
         if (isPrimary) {
-          // Unset current primary
           await prisma.productImage.updateMany({
             where: { productId: id },
-            data:  { isPrimary: false },
+            data: { isPrimary: false },
           });
         }
 
@@ -58,7 +77,6 @@ export default async function adminProductsRoute(fastify: FastifyInstance) {
   );
 
   // ── PUT /api/admin/products/:id/wood-variants ─────────────────────────────
-  // Replace the full set of wood variants for a product
   fastify.put<{ Params: { id: string } }>(
     "/:id/wood-variants",
     { preHandler: [requireAdmin] },
@@ -71,15 +89,14 @@ export default async function adminProductsRoute(fastify: FastifyInstance) {
         }>;
       };
 
-      // Delete existing, re-create new
       await prisma.productWoodVariant.deleteMany({ where: { productId: request.params.id } });
       const created = await prisma.$transaction(
         variants.map((v) =>
           prisma.productWoodVariant.create({
             data: {
-              productId:         request.params.id,
-              woodTypeId:        v.woodTypeId,
-              priceModifier:     v.priceModifier,
+              productId: request.params.id,
+              woodTypeId: v.woodTypeId,
+              priceModifier: v.priceModifier,
               priceModifierType: (v.priceModifierType ?? "FIXED_ADD") as any,
             },
           })
@@ -95,10 +112,13 @@ export default async function adminProductsRoute(fastify: FastifyInstance) {
     "/:id/toggle-active",
     { preHandler: [requireAdmin] },
     async (request) => {
-      const current = await prisma.product.findUnique({ where: { id: request.params.id }, select: { isActive: true } });
-      const product  = await prisma.product.update({
+      const current = await prisma.product.findUnique({
         where: { id: request.params.id },
-        data:  { isActive: !current?.isActive },
+        select: { isActive: true },
+      });
+      const product = await prisma.product.update({
+        where: { id: request.params.id },
+        data: { isActive: !current?.isActive },
       });
       return { success: true, data: { id: product.id, isActive: product.isActive } };
     }

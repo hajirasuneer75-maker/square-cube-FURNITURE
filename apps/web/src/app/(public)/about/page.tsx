@@ -5,8 +5,8 @@ import { Shield, Clock, Truck, Award } from "lucide-react";
 import WAButton from "@/components/ui/WAButton";
 
 export const metadata: Metadata = {
-  title:       "About Us | Square Cube",
-  description: "Square Cube is a premium custom furniture studio based in India — crafting handmade, made-to-order pieces in solid hardwood since 2018.",
+  title:       "About Us",
+  description: "Square Cube Furniture is an architectural custom furniture studio based in India — crafting handmade, made-to-order pieces in solid hardwood.",
 };
 
 const VALUES = [
@@ -61,8 +61,8 @@ export default function AboutPage() {
             Premium Furniture, Built Around Your Life
           </h1>
           <p className="text-stone-300 text-lg max-w-xl leading-relaxed">
-            Square Cube started in 2018 with one belief: furniture should fit your home, your taste,
-            and your budget — not the other way around. We build every piece from scratch, to order,
+            Square Cube Furniture started with one belief: furniture should fit your home, your taste,
+            and your lifestyle — not the other way around. We build every piece from scratch, to order,
             in premium Indian hardwood.
           </p>
         </div>
@@ -103,7 +103,7 @@ export default function AboutPage() {
                 sketched the table himself, and had it made to exact dimensions.
               </p>
               <p>
-                Friends started asking where he got it. That question became Square Cube — a studio
+                Friends started asking where he got it. That question became Square Cube Furniture — a studio
                 where every customer gets the same experience: tell us what you want, we build it.
               </p>
               <p>
@@ -115,7 +115,7 @@ export default function AboutPage() {
           <div className="relative aspect-[4/3] overflow-hidden">
             <Image
               src="https://images.unsplash.com/photo-1556020685-ae41abfc9365?w=700&h=500&fit=crop"
-              alt="Square Cube workshop"
+              alt="Square Cube Furniture workshop"
               fill
               className="object-cover"
             />

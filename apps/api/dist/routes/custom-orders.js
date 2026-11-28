@@ -1,33 +1,43 @@
 import { prisma } from "../lib/prisma.js";
-import { uploadBuffer } from "../lib/cloudinary.js";
+import { uploadBuffer, isCloudinaryConfigured } from "../lib/cloudinary.js";
 import { requireAdmin } from "../middlewares/auth.js";
 export default async function customOrdersRoute(fastify) {
     // ── POST /api/custom-orders ────────────────────────────────────────────────
-    // Accepts multipart/form-data — text fields + optional image/PDF attachments
+    // Accepts either multipart/form-data OR application/json
     fastify.post("/", async (request, reply) => {
-        const parts = request.parts();
-        const fields = {};
+        let fields = {};
         const uploadedUrls = [];
-        for await (const part of parts) {
-            if (part.type === "file") {
-                const file = part;
-                const allowed = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
-                if (!allowed.includes(file.mimetype))
-                    continue;
-                const buffer = await file.toBuffer();
-                try {
-                    const url = await uploadBuffer(buffer, file.filename, "enquiries");
-                    uploadedUrls.push(url);
+        if (request.isMultipart()) {
+            const parts = request.parts();
+            for await (const part of parts) {
+                if (part.type === "file") {
+                    const file = part;
+                    const allowed = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+                    if (!allowed.includes(file.mimetype))
+                        continue;
+                    if (isCloudinaryConfigured()) {
+                        const buffer = await file.toBuffer();
+                        try {
+                            const url = await uploadBuffer(buffer, `${Date.now()}-${file.filename}`, "enquiries");
+                            uploadedUrls.push(url);
+                        }
+                        catch (err) {
+                            fastify.log.warn(`[custom-orders] Cloudinary upload failed for ${file.filename}: ${err}`);
+                        }
+                    }
                 }
-                catch (err) {
-                    fastify.log.warn(`[custom-orders] Cloudinary upload failed for ${file.filename}: ${err}`);
+                else {
+                    fields[part.fieldname] = part.value;
                 }
-            }
-            else {
-                fields[part.fieldname] = part.value;
             }
         }
-        const { name, phone, email, city, furnitureType, woodType, budgetRange, length, width, height, description } = fields;
+        else {
+            fields = request.body ?? {};
+            if (Array.isArray(fields.referenceImages)) {
+                uploadedUrls.push(...fields.referenceImages.filter((u) => typeof u === "string" && u.length > 0));
+            }
+        }
+        const { name, phone, email, city, furnitureType, woodType, budgetRange, length, width, height, description, } = fields;
         if (!name || !phone || !furnitureType || !description) {
             return reply.status(400).send({
                 success: false,
@@ -36,8 +46,17 @@ export default async function customOrdersRoute(fastify) {
         }
         const order = await prisma.customOrder.create({
             data: {
-                name, phone, email, city, furnitureType, woodType, budgetRange,
-                length, width, height, description,
+                name: String(name),
+                phone: String(phone),
+                email: email ? String(email) : null,
+                city: city ? String(city) : null,
+                furnitureType: String(furnitureType),
+                woodType: woodType ? String(woodType) : null,
+                budgetRange: budgetRange ? String(budgetRange) : "Custom Studio Estimate",
+                length: length ? String(length) : null,
+                width: width ? String(width) : null,
+                height: height ? String(height) : null,
+                description: String(description),
                 referenceImages: uploadedUrls,
             },
         });
@@ -75,7 +94,7 @@ export default async function customOrdersRoute(fastify) {
         return { success: true, data: order };
     });
     // ── PATCH /api/custom-orders/:id/status (admin) ───────────────────────────
-    fastify.patch("/:id/status", { preHandler: [requireAdmin] }, async (request, reply) => {
+    fastify.patch("/:id/status", { preHandler: [requireAdmin] }, async (request) => {
         const { status, adminNotes, quotedPrice } = request.body;
         const order = await prisma.customOrder.update({
             where: { id: request.params.id },

@@ -3,15 +3,16 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Heart, User, Search, Menu, X, ChevronDown } from "lucide-react";
+import { Heart, User, Search, Menu, X, ShoppingBag, Sparkles, ArrowRight } from "lucide-react";
 import { useWishlistStore } from "@/store/useWishlistStore";
+import { useCartStore } from "@/store/useCartStore";
 import { useUserStore } from "@/store/useUserStore";
 import { useSettingsStore } from "@/store/useSettingsStore";
 import { NAVIGATION_CATEGORIES } from "@/lib/constants/categories";
-import { cn } from "@/lib/utils";
+import { cn, generateWhatsAppUrl, getWhatsAppNumber } from "@/lib/utils";
 import MobileMenu from "./MobileMenu";
+import CartDrawer from "./CartDrawer";
 
-// Reusable WhatsApp SVG
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -20,28 +21,53 @@ function WhatsAppIcon({ className }: { className?: string }) {
   );
 }
 
+const NAV_LINKS = [
+  { label: "Collections",        href: "/products" },
+  { label: "Custom Studio",      href: "/custom-furniture" },
+  { label: "Maintenance & Care", href: "/maintenance" },
+  { label: "AI Room Stylist",    href: "/ai-stylist", icon: <Sparkles size={13} className="text-champagne" /> },
+];
+
 export default function Navbar() {
+  const [mounted, setMounted] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isShopOpen, setIsShopOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [scrolled, setScrolled] = useState(false);
 
   const shopRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   const wishlistCount = useWishlistStore((s) => s.items.length);
-  const user          = useUserStore((s) => s.user);
-  const { whatsappNumber, announcementText, announcementEnabled } = useSettingsStore();
+  const cartItems = useCartStore((s) => s.items);
+  const openCart = useCartStore((s) => s.openCart);
+  const cartCount = cartItems.reduce((sum, i) => sum + i.qty, 0);
 
-  // Only show announcement if enabled in settings (once dismissed, stays hidden for session)
+  const user = useUserStore((s) => s.user);
+  const { whatsappNumber, announcementText, announcementEnabled, syncFromServer } = useSettingsStore();
+  const waNumber = getWhatsAppNumber(mounted ? whatsappNumber : null);
+
   const [showAnnouncement, setShowAnnouncement] = useState(false);
-  useEffect(() => { setShowAnnouncement(announcementEnabled); }, [announcementEnabled]);
+
+  useEffect(() => {
+    setMounted(true);
+    syncFromServer();
+  }, [syncFromServer]);
+
+  useEffect(() => {
+    setShowAnnouncement(announcementEnabled);
+  }, [announcementEnabled]);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
-      if (shopRef.current && !shopRef.current.contains(e.target as Node)) {
-        setIsShopOpen(false);
-      }
+      if (shopRef.current && !shopRef.current.contains(e.target as Node)) setIsShopOpen(false);
     }
     document.addEventListener("mousedown", onClickOutside);
     return () => document.removeEventListener("mousedown", onClickOutside);
@@ -57,48 +83,50 @@ export default function Navbar() {
 
   return (
     <>
-      {/* ── Announcement Bar ──────────────────────────────────────── */}
+      {/* Announcement Bar */}
       {showAnnouncement && (
-        <div className="bg-stone-900 text-white text-xs py-2 px-4 text-center relative">
-          <span className="tracking-wide">{announcementText}</span>
+        <div className="bg-espresso text-white text-[11px] py-2 px-8 text-center relative tracking-[0.08em]">
+          <span>{announcementText}</span>
           <button
             onClick={() => setShowAnnouncement(false)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 hover:opacity-70 transition-opacity"
-            aria-label="Dismiss"
+            className="absolute right-4 top-1/2 -translate-y-1/2 hover:opacity-60 transition-opacity"
+            aria-label="Dismiss announcement"
           >
-            <X size={12} />
+            <X size={11} />
           </button>
         </div>
       )}
 
-      {/* ── Main Header ───────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 bg-white border-b border-stone-100 shadow-sm">
+      {/* Main Sticky Header */}
+      <header
+        className={cn(
+          "sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b transition-shadow duration-300",
+          scrolled ? "border-warm-border shadow-luxury" : "border-warm-border"
+        )}
+      >
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 lg:h-20">
-
-            {/* Hamburger (mobile) */}
+            {/* Mobile Menu Trigger */}
             <button
-              className="lg:hidden p-2 -ml-2 text-stone-700 hover:text-stone-900 transition-colors"
+              className="lg:hidden p-2 -ml-2 text-espresso hover:text-champagne transition-colors"
               onClick={() => setIsMobileMenuOpen(true)}
               aria-label="Open menu"
             >
               <Menu size={22} />
             </button>
 
-            {/* Logo */}
+            {/* Strict Brand Logo */}
             <Link href="/" className="flex-shrink-0 flex flex-col items-center lg:items-start">
-              <span className="font-display text-xl lg:text-2xl font-semibold tracking-tight text-stone-900">
-                Square Cube
+              <span className="font-display text-lg sm:text-xl lg:text-2xl font-semibold tracking-tight text-espresso leading-none">
+                Square Cube Furniture
               </span>
-              <span className="hidden lg:block text-[10px] tracking-[0.2em] uppercase text-gold-600 font-sans mt-0.5">
-                Bespoke Furniture
+              <span className="hidden lg:block text-[9px] tracking-[0.28em] uppercase text-champagne font-ui mt-1">
+                Architectural Woodcraft &amp; Studio
               </span>
             </Link>
 
-            {/* ── Desktop Nav ─────────────────────────────────────── */}
-            <nav className="hidden lg:flex items-center gap-8">
-
-              {/* Shop + Mega Menu */}
+            {/* Desktop Navigation */}
+            <nav className="hidden lg:flex items-center gap-7">
               <div
                 ref={shopRef}
                 className="relative"
@@ -107,68 +135,72 @@ export default function Navbar() {
               >
                 <button
                   className={cn(
-                    "flex items-center gap-1 text-sm font-medium tracking-wide transition-colors duration-200",
-                    isShopOpen ? "text-gold-600" : "text-stone-700 hover:text-stone-900"
+                    "flex items-center gap-1 text-sm font-ui font-medium tracking-wide transition-colors duration-200",
+                    isShopOpen ? "text-champagne" : "text-espresso/75 hover:text-espresso"
                   )}
                   onClick={() => setIsShopOpen((v) => !v)}
                   aria-expanded={isShopOpen}
                 >
-                  Shop
-                  <ChevronDown
-                    size={14}
-                    className={cn("transition-transform duration-200", isShopOpen && "rotate-180")}
-                  />
+                  Collections
                 </button>
 
                 {isShopOpen && (
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-5 w-[680px] bg-white border border-stone-100 shadow-xl animate-slide-down">
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-6 w-[720px] bg-white border border-warm-border shadow-luxury-hover animate-slide-down">
                     <div className="p-6 grid grid-cols-3 gap-6">
                       <div className="col-span-2">
-                        <p className="section-label mb-4">Browse Categories</p>
+                        <p className="section-label mb-4">Explore Categories</p>
                         <div className="grid grid-cols-2 gap-0.5">
-                          {NAVIGATION_CATEGORIES.filter((c) => c.slug !== "custom").map((cat) => (
+                          {NAVIGATION_CATEGORIES.filter((c) => c.slug !== "custom").slice(0, 10).map((cat) => (
                             <Link
                               key={cat.slug}
                               href={`/categories/${cat.slug}`}
-                              className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-stone-700 hover:bg-stone-50 hover:text-stone-900 transition-colors rounded-sm"
+                              className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-espresso/75 hover:bg-alabaster hover:text-espresso transition-colors"
                               onClick={() => setIsShopOpen(false)}
                             >
                               <span className="text-base leading-none">{cat.icon}</span>
-                              <span className="font-medium">{cat.name}</span>
+                              <span className="font-ui font-medium">{cat.name}</span>
                             </Link>
                           ))}
                         </div>
                       </div>
 
-                      <div className="border-l border-stone-100 pl-6">
-                        <p className="section-label mb-4">Custom Order</p>
-                        <p className="text-sm text-stone-500 leading-relaxed mb-4">
-                          Can't find what you need? We build to your exact specifications.
-                        </p>
-                        <Link
-                          href="/customize"
-                          className="btn-primary w-full text-center text-xs py-2.5 block"
-                          onClick={() => setIsShopOpen(false)}
-                        >
-                          Start Customizing
-                        </Link>
-                        <Link
-                          href="/gallery"
-                          className="block mt-3 text-sm text-stone-500 hover:text-stone-900 underline underline-offset-2 transition-colors"
-                          onClick={() => setIsShopOpen(false)}
-                        >
-                          View our Gallery →
-                        </Link>
+                      <div className="border-l border-warm-border pl-6 space-y-4">
+                        <div>
+                          <p className="section-label mb-2">Custom Studio</p>
+                          <p className="text-xs text-espresso/60 leading-relaxed mb-3">
+                            Design furniture built to your room&apos;s exact proportions.
+                          </p>
+                          <Link
+                            href="/custom-furniture"
+                            className="btn-champagne w-full text-center text-[10px] py-2.5 block"
+                            onClick={() => setIsShopOpen(false)}
+                          >
+                            Open Studio
+                          </Link>
+                        </div>
+                        <div>
+                          <p className="section-label mb-2">AI Room Stylist</p>
+                          <p className="text-xs text-espresso/60 leading-relaxed mb-3">
+                            Free Gemini room analysis &amp; material pairing.
+                          </p>
+                          <Link
+                            href="/ai-stylist"
+                            className="btn-outline-champagne w-full text-center text-[10px] py-2.5 block"
+                            onClick={() => setIsShopOpen(false)}
+                          >
+                            Try AI Stylist ✦
+                          </Link>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="border-t border-stone-100 px-6 py-3 bg-stone-50 flex justify-between items-center">
-                      <span className="text-xs text-stone-400">
-                        Manufacturing Time: 12–35 Working Days
+                    <div className="border-t border-warm-border px-6 py-3 bg-alabaster flex justify-between items-center">
+                      <span className="text-xs text-espresso/45 font-ui">
+                        Crafted in Kerala · Pan-India White-Glove Delivery
                       </span>
                       <Link
                         href="/products"
-                        className="text-xs font-medium text-stone-900 hover:text-gold-600 transition-colors"
+                        className="text-xs font-ui font-semibold text-espresso hover:text-champagne transition-colors"
                         onClick={() => setIsShopOpen(false)}
                       >
                         View All Products →
@@ -178,24 +210,25 @@ export default function Navbar() {
                 )}
               </div>
 
-              <Link href="/customize" className="text-sm font-medium text-stone-700 hover:text-stone-900 tracking-wide transition-colors">
-                Custom Furniture
-              </Link>
-              <Link href="/gallery" className="text-sm font-medium text-stone-700 hover:text-stone-900 tracking-wide transition-colors">
-                Gallery
-              </Link>
-              <Link href="/faq" className="text-sm font-medium text-stone-700 hover:text-stone-900 tracking-wide transition-colors">
-                FAQ
-              </Link>
+              {NAV_LINKS.slice(1).map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="flex items-center gap-1.5 text-sm font-ui font-medium text-espresso/75 hover:text-espresso tracking-wide transition-colors"
+                >
+                  {link.icon}
+                  {link.label}
+                </Link>
+              ))}
             </nav>
 
-            {/* ── Right Icons ─────────────────────────────────────── */}
-            <div className="flex items-center gap-1 sm:gap-2">
-              {/* Search */}
+            {/* Right Actions */}
+            <div className="flex items-center gap-1 sm:gap-1.5">
+              {/* Search Drawer Toggle */}
               <button
-                className="p-2 text-stone-600 hover:text-stone-900 transition-colors"
-                onClick={() => setIsSearchOpen((v) => !v)}
-                aria-label="Search"
+                className="p-2 text-espresso/65 hover:text-espresso transition-colors"
+                onClick={() => setIsSearchOpen(true)}
+                aria-label="Open search drawer"
               >
                 <Search size={18} />
               </button>
@@ -203,73 +236,123 @@ export default function Navbar() {
               {/* Wishlist */}
               <Link
                 href="/account/wishlist"
-                className="relative p-2 text-stone-600 hover:text-stone-900 transition-colors"
-                aria-label={`Wishlist (${wishlistCount} items)`}
+                className="relative p-2 text-espresso/65 hover:text-espresso transition-colors"
+                aria-label={`Wishlist (${mounted ? wishlistCount : 0} items)`}
               >
                 <Heart size={18} />
-                {wishlistCount > 0 && (
-                  <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 bg-gold-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5">
+                {mounted && wishlistCount > 0 && (
+                  <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 bg-champagne text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
                     {wishlistCount}
                   </span>
                 )}
               </Link>
 
+              {/* Cart Counter */}
+              <button
+                onClick={openCart}
+                className="relative p-2 text-espresso/65 hover:text-espresso transition-colors"
+                aria-label={`Cart (${mounted ? cartCount : 0} items)`}
+              >
+                <ShoppingBag size={18} />
+                {mounted && cartCount > 0 && (
+                  <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 bg-espresso text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                    {cartCount}
+                  </span>
+                )}
+              </button>
+
               {/* Account */}
               <Link
                 href={user ? "/account/dashboard" : "/login"}
-                className="p-2 text-stone-600 hover:text-stone-900 transition-colors"
+                className="hidden sm:inline-flex p-2 text-espresso/65 hover:text-espresso transition-colors"
                 aria-label="Account"
               >
                 <User size={18} />
               </Link>
 
-              {/* WhatsApp CTA — desktop only */}
-              <Link
-                href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent("Hello Square Cube! I'd like to enquire about your furniture.")}`}
+              {/* Direct WhatsApp Button */}
+              <a
+                href={generateWhatsAppUrl(
+                  waNumber,
+                  "Hello Square Cube Furniture! I'd like to enquire about your luxury furniture."
+                )}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hidden xl:flex btn-whatsapp py-2 px-4 text-xs gap-1.5 ml-2"
+                className="hidden xl:flex btn-whatsapp py-2 px-4 text-xs gap-1.5 ml-1.5 rounded-full"
+                suppressHydrationWarning
               >
                 <WhatsAppIcon className="w-3.5 h-3.5" />
-                WhatsApp Us
-              </Link>
+                WhatsApp
+              </a>
             </div>
           </div>
         </div>
-
-        {/* ── Expandable Search Bar ────────────────────────────────── */}
-        {isSearchOpen && (
-          <div className="border-t border-stone-100 bg-white animate-slide-down">
-            <form
-              onSubmit={handleSearch}
-              className="max-w-2xl mx-auto px-4 py-4 flex gap-3"
-            >
-              <input
-                autoFocus
-                type="text"
-                placeholder="Search furniture, categories, wood types…"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="input-base flex-1"
-              />
-              <button type="submit" className="btn-primary py-2.5 px-5 text-sm">
-                Search
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsSearchOpen(false)}
-                className="p-2.5 text-stone-400 hover:text-stone-700 transition-colors"
-                aria-label="Close search"
-              >
-                <X size={18} />
-              </button>
-            </form>
-          </div>
-        )}
       </header>
 
-      {/* Mobile Drawer */}
+      {/* Slide-Down Search Drawer */}
+      {isSearchOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-50 bg-espresso/40 backdrop-blur-sm animate-fade-in"
+            onClick={() => setIsSearchOpen(false)}
+          />
+          <div className="fixed inset-x-0 top-0 z-50 bg-white border-b border-warm-border shadow-luxury-hover animate-slide-down">
+            <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+              <div className="flex items-center justify-between mb-4">
+                <p className="section-label">Search Square Cube Furniture</p>
+                <button
+                  onClick={() => setIsSearchOpen(false)}
+                  className="p-2 text-espresso/50 hover:text-espresso transition-colors"
+                  aria-label="Close search drawer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <form onSubmit={handleSearch} className="flex gap-3">
+                <input
+                  autoFocus
+                  type="text"
+                  placeholder="Search Nilambur Teak, Dining Tables, Sofas, Wardrobes…"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="input-luxury flex-1"
+                />
+                <button type="submit" className="btn-primary py-3 px-6 text-xs">
+                  Search
+                </button>
+              </form>
+              <div className="mt-5 flex flex-wrap items-center gap-2">
+                <span className="text-[11px] font-ui text-espresso/45 uppercase tracking-wider mr-2">
+                  Popular:
+                </span>
+                {["Nilambur Teak", "Dining Table", "King Bed", "Wardrobe", "Sofa"].map((term) => (
+                  <button
+                    key={term}
+                    type="button"
+                    onClick={() => {
+                      router.push(`/products?search=${encodeURIComponent(term)}`);
+                      setIsSearchOpen(false);
+                    }}
+                    className="text-xs font-ui px-3 py-1 bg-alabaster border border-warm-border text-espresso/75 hover:border-champagne hover:text-espresso transition-colors"
+                  >
+                    {term}
+                  </button>
+                ))}
+                <Link
+                  href="/ai-stylist"
+                  onClick={() => setIsSearchOpen(false)}
+                  className="ml-auto inline-flex items-center gap-1 text-xs font-ui font-semibold text-champagne hover:underline"
+                >
+                  Or upload a room photo with AI Stylist <ArrowRight size={12} />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
       <MobileMenu isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
+      <CartDrawer />
     </>
   );
 }

@@ -3,8 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Heart, Eye } from "lucide-react";
+import { Heart, Eye, ShoppingBag } from "lucide-react";
 import { useWishlistStore } from "@/store/useWishlistStore";
+import { useCartStore } from "@/store/useCartStore";
 import { useSettingsStore } from "@/store/useSettingsStore";
 import { cn, formatPrice, generateWhatsAppUrl } from "@/lib/utils";
 import type { Product } from "@/types";
@@ -16,10 +17,7 @@ function StarRating({ rating, count }: { rating: number; count: number }) {
         {Array.from({ length: 5 }).map((_, i) => (
           <svg
             key={i}
-            className={cn(
-              "w-3 h-3",
-              i < Math.round(rating) ? "text-gold-400" : "text-stone-200"
-            )}
+            className={cn("w-3 h-3", i < Math.round(rating) ? "text-champagne" : "text-warm-border")}
             fill="currentColor"
             viewBox="0 0 20 20"
             aria-hidden="true"
@@ -28,7 +26,7 @@ function StarRating({ rating, count }: { rating: number; count: number }) {
           </svg>
         ))}
       </div>
-      <span className="text-[10px] text-stone-400">({count})</span>
+      <span className="text-[10px] font-ui text-espresso/45">({count})</span>
     </div>
   );
 }
@@ -48,8 +46,14 @@ interface ProductCardProps {
 export default function ProductCard({ product }: ProductCardProps) {
   const [hovered, setHovered] = useState(false);
   const { toggleItem, isInWishlist } = useWishlistStore();
+  const { addItem } = useCartStore();
   const { whatsappNumber } = useSettingsStore();
   const inWishlist = isInWishlist(product.id);
+
+  const effectivePrice =
+    product.offerPrice && product.offerPrice < product.basePrice
+      ? product.offerPrice
+      : product.basePrice;
 
   function handleWishlist(e: React.MouseEvent) {
     e.preventDefault();
@@ -57,7 +61,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     toggleItem({
       productId: product.id,
       productName: product.name,
-      basePrice: product.basePrice,
+      basePrice: effectivePrice,
       primaryImage: product.primaryImage,
       slug: product.slug,
       categoryName: product.categoryName,
@@ -65,19 +69,33 @@ export default function ProductCard({ product }: ProductCardProps) {
     });
   }
 
+  function handleAddToCart(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    addItem({
+      productId: product.id,
+      slug: product.slug,
+      name: product.name,
+      sku: product.sku,
+      primaryImage: product.primaryImage,
+      price: effectivePrice,
+      woodName: product.availableWoods?.[0]?.name,
+    });
+  }
+
   const waUrl = generateWhatsAppUrl(
     whatsappNumber,
-    `Hello Square Cube! 👋\n\nI am interested in: *${product.name}*\nProduct ID: ${product.sku}\n\nPlease provide more details and pricing.`
+    `Hello Square Cube Furniture! 👋\n\nI am interested in: *${product.name}*\nProduct SKU: ${product.sku}\nPrice: ${formatPrice(effectivePrice)}\n\nPlease share more details and delivery timeline.`
   );
 
   return (
     <article
-      className="group relative bg-white shadow-card hover:shadow-card-hover transition-shadow duration-300"
+      className="group relative luxury-card rounded-xl overflow-hidden flex flex-col"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* ── Image ── */}
-      <Link href={`/products/${product.slug}`} className="block relative overflow-hidden aspect-[4/3] bg-stone-100">
+      {/* Image */}
+      <Link href={`/products/${product.slug}`} className="block relative overflow-hidden aspect-[4/3] bg-alabaster">
         <Image
           src={product.primaryImage}
           alt={product.name}
@@ -89,110 +107,118 @@ export default function ProductCard({ product }: ProductCardProps) {
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
         />
 
-        {/* Hover overlay */}
         <div
           className={cn(
-            "absolute inset-0 bg-black/20 flex items-center justify-center transition-opacity duration-300",
+            "absolute inset-0 bg-espresso/20 flex items-center justify-center transition-opacity duration-300",
             hovered ? "opacity-100" : "opacity-0"
           )}
           aria-hidden="true"
         >
-          <span className="bg-white text-stone-900 text-xs font-medium tracking-wide px-4 py-2 flex items-center gap-1.5">
-            <Eye size={12} />
-            View Details
+          <span className="bg-white text-espresso text-xs font-ui font-semibold tracking-wider uppercase px-4 py-2 flex items-center gap-1.5 shadow-sm">
+            <Eye size={12} /> View Piece
           </span>
         </div>
 
         {/* Badges */}
         <div className="absolute top-3 left-3 flex flex-col gap-1.5 pointer-events-none">
           {product.isFeatured && (
-            <span className="bg-gold-500 text-white text-[10px] font-semibold tracking-wide px-2 py-1">
-              FEATURED
+            <span className="bg-champagne text-white text-[9px] font-ui font-semibold tracking-[0.16em] uppercase px-2.5 py-1">
+              Signature
             </span>
           )}
-          {product.manufacturingTime && (
-            <span className="bg-white/90 text-stone-600 text-[10px] font-medium px-2 py-1">
-              {product.manufacturingTime}
+          {product.offerPrice && product.offerPrice < product.basePrice && (
+            <span className="bg-espresso text-white text-[9px] font-ui font-semibold tracking-[0.14em] uppercase px-2.5 py-1">
+              Studio Offer
             </span>
           )}
         </div>
       </Link>
 
-      {/* Wishlist button */}
+      {/* Wishlist */}
       <button
         onClick={handleWishlist}
         className={cn(
-          "absolute top-3 right-3 p-2 rounded-full transition-all duration-200",
+          "absolute top-3 right-3 p-2 rounded-full transition-all duration-200 shadow-sm",
           inWishlist
             ? "bg-red-50 text-red-500 opacity-100"
-            : cn(
-                "bg-white/90 text-stone-400 hover:text-red-400",
-                hovered ? "opacity-100" : "opacity-0"
-              )
+            : cn("bg-white/95 text-espresso/50 hover:text-red-500", hovered ? "opacity-100" : "opacity-0 sm:opacity-80")
         )}
         aria-label={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
       >
-        <Heart size={16} className={cn(inWishlist && "fill-red-500")} />
+        <Heart size={15} className={cn(inWishlist && "fill-red-500")} />
       </button>
 
-      {/* ── Card body ── */}
-      <div className="p-4">
+      {/* Body */}
+      <div className="p-5 flex-1 flex flex-col">
         <p className="section-label mb-1.5">{product.categoryName}</p>
 
         <Link href={`/products/${product.slug}`}>
-          <h3 className="font-display text-base font-semibold text-stone-900 leading-tight mb-2 hover:text-stone-700 transition-colors line-clamp-1">
+          <h3 className="font-display text-xl font-semibold text-espresso leading-snug mb-2 hover:text-champagne transition-colors line-clamp-1">
             {product.name}
           </h3>
         </Link>
 
-        <p className="text-xs text-stone-500 mb-3 line-clamp-2 leading-relaxed">
+        <p className="text-xs font-ui text-espresso/60 mb-3 line-clamp-2 leading-relaxed">
           {product.shortDescription}
         </p>
 
-        {product.rating && product.reviewCount && (
+        {product.rating && product.reviewCount ? (
           <div className="mb-3">
             <StarRating rating={product.rating} count={product.reviewCount} />
           </div>
-        )}
+        ) : null}
 
-        {/* Wood types */}
         {product.availableWoods && product.availableWoods.length > 0 && (
-          <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+          <div className="flex items-center gap-1.5 mb-4 flex-wrap">
             {product.availableWoods.slice(0, 3).map((wood) => (
               <span
                 key={wood.id}
-                className="text-[10px] border border-stone-200 text-stone-500 px-2 py-0.5"
+                className="text-[10px] font-ui border border-warm-border text-espresso/65 px-2 py-0.5 bg-alabaster"
               >
                 {wood.name}
               </span>
             ))}
-            {product.availableWoods.length > 3 && (
-              <span className="text-[10px] text-stone-400">
-                +{product.availableWoods.length - 3} more
-              </span>
-            )}
           </div>
         )}
 
-        {/* Price + WhatsApp */}
-        <div className="flex items-end justify-between mt-auto pt-2 border-t border-stone-50">
+        {/* Price + Actions */}
+        <div className="flex items-end justify-between mt-auto pt-3 border-t border-warm-border">
           <div>
-            <p className="text-[10px] text-stone-400 uppercase tracking-wide">Starting from</p>
-            <p className="font-display text-lg font-semibold text-stone-900">
-              {formatPrice(product.basePrice)}
-            </p>
+            <p className="text-[10px] font-ui text-espresso/45 uppercase tracking-wider">Studio Price</p>
+            <div className="flex items-baseline gap-2">
+              <p className="font-display text-xl font-semibold text-espresso">
+                {formatPrice(effectivePrice)}
+              </p>
+              {product.offerPrice && product.offerPrice < product.basePrice && (
+                <p className="text-xs font-ui text-espresso/40 line-through">
+                  {formatPrice(product.basePrice)}
+                </p>
+              )}
+            </div>
           </div>
 
-          <Link
-            href={waUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="p-2.5 bg-[#25D366] text-white hover:bg-[#1ebe5d] transition-colors"
-            aria-label={`Chat about ${product.name} on WhatsApp`}
-          >
-            <WhatsAppIcon className="w-4 h-4" />
-          </Link>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={handleAddToCart}
+              className="p-2.5 bg-espresso text-white hover:bg-champagne transition-colors rounded-md"
+              aria-label={`Add ${product.name} to cart`}
+              title="Add to Cart"
+            >
+              <ShoppingBag size={15} />
+            </button>
+            <a
+              href={waUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="p-2.5 bg-[#25D366] text-white hover:bg-[#1ebe5d] transition-colors rounded-md"
+              aria-label={`Chat about ${product.name} on WhatsApp`}
+              title="Enquire on WhatsApp"
+            >
+              <WhatsAppIcon className="w-4 h-4" />
+            </a>
+          </div>
         </div>
       </div>
     </article>

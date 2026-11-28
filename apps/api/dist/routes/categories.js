@@ -1,9 +1,13 @@
 import { prisma } from "../lib/prisma.js";
+import { requireAdmin } from "../middlewares/auth.js";
+function toSlug(input) {
+    return input.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
 export default async function categoriesRoute(fastify) {
     // GET /api/categories
     fastify.get("/", async () => {
         const categories = await prisma.category.findMany({
-            where: { parentId: null }, // only top-level
+            where: { parentId: null },
             orderBy: { name: "asc" },
             include: { children: true, _count: { select: { products: true } } },
         });
@@ -18,6 +22,69 @@ export default async function categoriesRoute(fastify) {
         if (!category)
             return reply.status(404).send({ success: false, error: "Category not found." });
         return { success: true, data: category };
+    });
+    // POST /api/categories (admin)
+    fastify.post("/", { preHandler: [requireAdmin] }, async (request, reply) => {
+        const b = request.body;
+        if (!b.name?.trim()) {
+            return reply.status(400).send({ success: false, error: "Category name is required." });
+        }
+        const slug = (b.slug?.trim() ? toSlug(b.slug) : toSlug(b.name));
+        try {
+            const created = await prisma.category.create({
+                data: {
+                    name: b.name.trim(),
+                    slug,
+                    description: b.description?.trim() || null,
+                    imageUrl: b.imageUrl?.trim() || null,
+                    icon: b.icon?.trim() || "🪵",
+                    parentId: b.parentId || null,
+                },
+                include: { _count: { select: { products: true } } },
+            });
+            return reply.status(201).send({ success: true, data: created });
+        }
+        catch (err) {
+            return reply.status(400).send({ success: false, error: err?.message ?? "Could not create category." });
+        }
+    });
+    // PUT /api/categories/:id (admin)
+    fastify.put("/:id", { preHandler: [requireAdmin] }, async (request, reply) => {
+        const b = request.body;
+        try {
+            const updated = await prisma.category.update({
+                where: { id: request.params.id },
+                data: {
+                    ...(b.name !== undefined ? { name: b.name.trim() } : {}),
+                    ...(b.slug !== undefined ? { slug: toSlug(b.slug) } : {}),
+                    ...(b.description !== undefined ? { description: b.description || null } : {}),
+                    ...(b.imageUrl !== undefined ? { imageUrl: b.imageUrl || null } : {}),
+                    ...(b.icon !== undefined ? { icon: b.icon || null } : {}),
+                },
+                include: { _count: { select: { products: true } } },
+            });
+            return { success: true, data: updated };
+        }
+        catch {
+            return reply.status(404).send({ success: false, error: "Category not found." });
+        }
+    });
+    // DELETE /api/categories/:id (admin)
+    fastify.delete("/:id", { preHandler: [requireAdmin] }, async (request, reply) => {
+        try {
+            const count = await prisma.product.count({ where: { categoryId: request.params.id } });
+            if (count > 0) {
+                return reply.status(409).send({
+                    success: false,
+                    error: `Cannot delete category with ${count} linked product(s). Reassign or delete them first.`,
+                });
+            }
+            await prisma.category.delete({ where: { id: request.params.id } });
+            return reply.status(204).send();
+        }
+        catch {
+            return reply.status(404).send({ success: false, error: "Category not found." });
+        }
     });
 }
 //# sourceMappingURL=categories.js.map

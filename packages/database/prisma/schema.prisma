@@ -98,6 +98,11 @@ model Product {
   weight            Float?
   careInstructions  String?
   tags              String[]
+  offerPrice        Float?
+  dimensions        String?
+  finishSwatches    String[]
+  fabricSwatches    String[]
+  stock             Int                  @default(10)
   rating            Float?
   reviewCount       Int                 @default(0)
   categoryId        String
@@ -186,4 +191,58 @@ model AdminSession {
   expiresAt DateTime
   createdAt DateTime @default(now())
   revokedAt DateTime?
+}
+
+
+// ─── Maintenance Ticket ───────────────────────────────────────────────────────
+enum MaintenanceStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum MaintenanceServiceType {
+  WOOD_POLISH
+  PU_REFINISH
+  REUPHOLSTERY
+  FOAM_REPLACEMENT
+  HINGE_REPAIR
+  TERMITE_TREATMENT
+  DISMANTLING_SHIFTING
+  GENERAL_REPAIR
+}
+
+model MaintenanceTicket {
+  id               String                 @id @default(cuid())
+  name             String
+  phone            String
+  email            String?
+  city             String?
+  serviceType      MaintenanceServiceType
+  furnitureItem    String
+  issueDescription String                 @db.Text
+  damagePhotos     String[]
+  preferredDate    String?
+  status           MaintenanceStatus      @default(OPEN)
+  adminNotes       String?                @db.Text
+  quotedPrice      Float?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+}
+
+// ─── Estimator Rates (Admin-configurable price rates) ─────────────────────────
+model EstimatorRate {
+  id          String  @id @default(cuid())
+  material    String  @unique   // e.g. "Nilambur Teak", "Mahogany", "Marine Ply"
+  ratePerSqFt Float             // INR per sq ft base rate
+  description String?
+  isActive    Boolean @default(true)
+}
+
+// ─── Site Setting (key-value store for admin-configurable settings) ───────────
+model SiteSetting {
+  key       String   @id
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
 }

@@ -3,8 +3,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title:       "Gallery | Square Cube",
-  description: "Browse our portfolio of handcrafted custom furniture — beds, dining tables, wardrobes, office setups, and more.",
+  title:       "Gallery",
+  description: "Browse Square Cube Furniture's portfolio of handcrafted custom furniture — beds, dining tables, wardrobes, office setups, and more.",
 };
 
 const GALLERY = [
@@ -121,8 +121,8 @@ export default function GalleryPage() {
       </div>
 
       {/* CTA */}
-      <div className="mt-16 bg-stone-900 text-white px-8 py-12 text-center">
-        <p className="section-label text-gold-400 mb-3">Bespoke Service</p>
+      <div className="mt-16 bg-espresso text-white px-8 py-12 text-center">
+        <p className="section-label text-champagne mb-3">Custom Studio Service</p>
         <h2 className="font-display text-2xl sm:text-3xl font-semibold mb-3">
           Like what you see? Let&apos;s build yours.
         </h2>

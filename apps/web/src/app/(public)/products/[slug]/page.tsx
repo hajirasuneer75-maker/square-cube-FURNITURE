@@ -1,32 +1,35 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { MOCK_PRODUCTS } from "@/lib/constants/mockData";
 import ProductDetailClient from "@/components/product/ProductDetailClient";
+import { fetchProductBySlugWithFallback, fetchProductsWithFallback } from "@/lib/api";
+
+export const dynamic = "force-dynamic";
 
 interface Props {
   params: { slug: string };
 }
 
-export function generateStaticParams() {
-  return MOCK_PRODUCTS.map((p) => ({ slug: p.slug }));
+export async function generateStaticParams() {
+  const products = await fetchProductsWithFallback();
+  return products.map((p) => ({ slug: p.slug }));
 }
 
-export function generateMetadata({ params }: Props): Metadata {
-  const product = MOCK_PRODUCTS.find((p) => p.slug === params.slug);
-  if (!product) return { title: "Not Found | Square Cube" };
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const product = await fetchProductBySlugWithFallback(params.slug);
+  if (!product) return { title: "Piece Not Found" };
   return {
-    title:       `${product.name} | Square Cube`,
+    title: product.name,
     description: product.shortDescription,
     openGraph: {
-      title:       product.name,
+      title: `${product.name} | Square Cube Furniture`,
       description: product.shortDescription,
-      images:      [{ url: product.primaryImage, width: 700, height: 500 }],
+      images: [{ url: product.primaryImage, width: 800, height: 600 }],
     },
   };
 }
 
-export default function ProductDetailPage({ params }: Props) {
-  const product = MOCK_PRODUCTS.find((p) => p.slug === params.slug);
+export default async function ProductDetailPage({ params }: Props) {
+  const product = await fetchProductBySlugWithFallback(params.slug);
   if (!product) notFound();
   return <ProductDetailClient product={product} />;
 }

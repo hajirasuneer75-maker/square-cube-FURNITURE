@@ -1,9 +1,9 @@
 @echo off
-title Square Cube - Dev Server
+title Square Cube Furniture - Dev Server
 echo.
-echo  ==========================================
-echo   Square Cube - Starting Development Server
-echo  ==========================================
+echo  ====================================================
+echo   Square Cube Furniture - Starting Development Server
+echo  ====================================================
 echo.
 
 cd /d "%~dp0apps\web"

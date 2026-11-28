@@ -1,4 +1,5 @@
-import "./types.js"; // JWT type augmentation — must be first
+import "./lib/env.js"; // Load root .env before any config reads process.env
+import "./types.js";   // JWT type augmentation
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
@@ -11,6 +12,11 @@ import customOrdersRoute from "./routes/custom-orders.js";
 import adminAuthRoute from "./routes/admin/auth.js";
 import adminProductsRoute from "./routes/admin/products.js";
 import adminEnquiriesRoute from "./routes/admin/enquiries.js";
+import maintenanceRoute from "./routes/maintenance.js";
+import estimatorRatesRoute from "./routes/estimator-rates.js";
+import siteSettingsRoute from "./routes/site-settings.js";
+import adminMaintenanceRoute from "./routes/admin/maintenance.js";
+import uploadRoute from "./routes/upload.js";
 import { prisma } from "./lib/prisma.js";
 
 const isDev = process.env.NODE_ENV !== "production";
@@ -30,7 +36,7 @@ await server.register(cors, {
 });
 
 await server.register(jwt, {
-  secret: process.env.JWT_SECRET ?? "dev-secret-change-in-production",
+  secret: process.env.JWT_SECRET ?? "dev-secret-squarecube-change-in-production",
   cookie: { cookieName: "sc_admin_token", signed: false },
   sign: { expiresIn: process.env.JWT_EXPIRES_IN ?? "7d" },
 });
@@ -40,7 +46,7 @@ await server.register(cookie, {
 });
 
 await server.register(multipart, {
-  limits: { fileSize: 10 * 1024 * 1024, files: 5 }, // 10 MB per file, max 5
+  limits: { fileSize: 10 * 1024 * 1024, files: 6 },
 });
 
 // ── Routes ────────────────────────────────────────────────────────────────────
@@ -51,11 +57,17 @@ await server.register(customOrdersRoute, { prefix: "/api/custom-orders" });
 await server.register(adminAuthRoute, { prefix: "/api/admin/auth" });
 await server.register(adminProductsRoute, { prefix: "/api/admin/products" });
 await server.register(adminEnquiriesRoute, { prefix: "/api/admin/enquiries" });
+await server.register(maintenanceRoute, { prefix: "/api/maintenance" });
+await server.register(estimatorRatesRoute, { prefix: "/api/estimator-rates" });
+await server.register(siteSettingsRoute, { prefix: "/api/site-settings" });
+await server.register(adminMaintenanceRoute, { prefix: "/api/admin/maintenance" });
+await server.register(uploadRoute, { prefix: "/api/upload" });
 
 // ── Health check ──────────────────────────────────────────────────────────────
 
 server.get("/health", async () => ({
   status: "ok",
+  brand: "Square Cube Furniture",
   timestamp: new Date().toISOString(),
   env: process.env.NODE_ENV,
 }));

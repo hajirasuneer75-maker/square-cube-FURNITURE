@@ -10,7 +10,7 @@ import {
   Home,
   AlertCircle,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, generateWhatsAppUrl } from "@/lib/utils";
 import { NAVIGATION_CATEGORIES, WOOD_TYPES } from "@/lib/constants/categories";
 import { useSettingsStore } from "@/store/useSettingsStore";
 import DropZone from "./DropZone";
@@ -209,7 +209,7 @@ export default function CustomOrderForm() {
 
       // Build a WhatsApp follow-up URL
       const lines = [
-        "Hello Square Cube! 🛋️",
+        "Hello Square Cube Furniture! 🛋️",
         "",
         `I just submitted a custom furniture request (${data.enquiryId}).`,
         `*Name:* ${form.name}`,
@@ -253,7 +253,7 @@ export default function CustomOrderForm() {
 
       setSubmission({
         enquiryId: data.enquiryId,
-        waUrl: `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(lines)}`,
+        waUrl: generateWhatsAppUrl(whatsappNumber, lines),
       });
     } catch {
       setStepError("Network error. Please check your connection and try again.");

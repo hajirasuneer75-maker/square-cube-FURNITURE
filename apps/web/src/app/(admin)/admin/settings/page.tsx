@@ -2,354 +2,371 @@
 
 import { useState, useEffect } from "react";
 import {
-  MessageCircle, Building2, Megaphone, RotateCcw,
-  Check, AlertTriangle, Eye, EyeOff,
+  MessageCircle,
+  Building2,
+  Megaphone,
+  Calculator,
+  Check,
+  Plus,
+  Trash2,
+  Image as ImageIcon,
 } from "lucide-react";
+import type { EstimatorRate } from "@/types";
 import { useSettingsStore, SETTINGS_DEFAULTS } from "@/store/useSettingsStore";
+import { DEFAULT_ESTIMATOR_RATES } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
-// ─── Section wrapper ──────────────────────────────────────────────────────────
-function Section({
-  icon: Icon,
-  title,
-  description,
-  children,
-}: {
-  icon: React.ElementType;
-  title: string;
-  description: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="bg-white border border-stone-200 overflow-hidden">
-      <div className="flex items-start gap-3 px-5 py-4 border-b border-stone-100 bg-stone-50">
-        <div className="w-8 h-8 bg-stone-900 text-white flex items-center justify-center flex-shrink-0 mt-0.5">
-          <Icon size={15} />
-        </div>
-        <div>
-          <h2 className="font-semibold text-stone-900 text-sm">{title}</h2>
-          <p className="text-xs text-stone-500 mt-0.5">{description}</p>
-        </div>
-      </div>
-      <div className="px-5 py-5 space-y-4">
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function Field({
-  label,
-  hint,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <label className="block text-xs font-semibold text-stone-600 uppercase tracking-wider mb-1.5">
-        {label}
-      </label>
-      {children}
-      {hint && <p className="text-xs text-stone-400 mt-1">{hint}</p>}
-    </div>
-  );
-}
-
-// ─── Main component ───────────────────────────────────────────────────────────
 export default function SettingsPage() {
   const store = useSettingsStore();
-
-  // Local draft so user can edit without immediately saving
   const [draft, setDraft] = useState({ ...SETTINGS_DEFAULTS });
+  const [rates, setRates] = useState<EstimatorRate[]>(DEFAULT_ESTIMATOR_RATES);
+  const [newMaterial, setNewMaterial] = useState("");
+  const [newRate, setNewRate] = useState("2000");
+  const [newDesc, setNewDesc] = useState("");
   const [saved, setSaved] = useState(false);
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const [showWAPreview, setShowWAPreview] = useState(false);
 
-  // Hydrate draft from persisted store on mount
   useEffect(() => {
     setDraft({
-      whatsappNumber:      store.whatsappNumber,
-      whatsappDisplay:     store.whatsappDisplay,
-      businessName:        store.businessName,
-      businessTagline:     store.businessTagline,
-      businessEmail:       store.businessEmail,
-      businessCity:        store.businessCity,
-      announcementText:    store.announcementText,
+      whatsappNumber: store.whatsappNumber,
+      whatsappDisplay: store.whatsappDisplay,
+      businessName: store.businessName,
+      businessTagline: store.businessTagline,
+      businessEmail: store.businessEmail,
+      businessCity: store.businessCity,
+      announcementText: store.announcementText,
       announcementEnabled: store.announcementEnabled,
+      heroHeadline: store.heroHeadline,
+      heroSubheadline: store.heroSubheadline,
+      heroBannerUrl: store.heroBannerUrl,
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    Promise.all([
+      fetch("/api/proxy/site-settings").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch("/api/proxy/estimator-rates/all").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+    ]).then(([settingsJson, ratesJson]) => {
+      if (settingsJson?.success && settingsJson.data) {
+        const d = settingsJson.data as Record<string, string>;
+        setDraft((prev) => ({
+          ...prev,
+          ...(d.whatsappNumber ? { whatsappNumber: d.whatsappNumber } : {}),
+          ...(d.whatsappDisplay ? { whatsappDisplay: d.whatsappDisplay } : {}),
+          ...(d.businessName ? { businessName: d.businessName } : {}),
+          ...(d.businessTagline ? { businessTagline: d.businessTagline } : {}),
+          ...(d.businessEmail ? { businessEmail: d.businessEmail } : {}),
+          ...(d.businessCity ? { businessCity: d.businessCity } : {}),
+          ...(d.announcementText ? { announcementText: d.announcementText } : {}),
+          ...(d.announcementEnabled !== undefined ? { announcementEnabled: d.announcementEnabled !== "false" } : {}),
+          ...(d.heroHeadline ? { heroHeadline: d.heroHeadline } : {}),
+          ...(d.heroSubheadline ? { heroSubheadline: d.heroSubheadline } : {}),
+          ...(d.heroBannerUrl ? { heroBannerUrl: d.heroBannerUrl } : {}),
+        }));
+      }
+      if (ratesJson?.success && Array.isArray(ratesJson.data) && ratesJson.data.length > 0) {
+        setRates(ratesJson.data);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function set(key: keyof typeof draft, value: string | boolean) {
+  function set<K extends keyof typeof draft>(key: K, value: (typeof draft)[K]) {
     setDraft((d) => ({ ...d, [key]: value }));
     setSaved(false);
   }
 
-  function handleSave() {
-    store.updateSettings(draft);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
-  }
-
-  function handleReset() {
-    store.resetSettings();
-    setDraft({ ...SETTINGS_DEFAULTS });
-    setShowResetConfirm(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
-  }
-
-  // Auto-format WA number as user types (keep only digits)
   function handleWANumberChange(raw: string) {
     const digits = raw.replace(/\D/g, "");
     set("whatsappNumber", digits);
-    // Auto-fill display if it matches default pattern
     if (digits.length >= 10) {
       const country = digits.slice(0, digits.length - 10);
-      const local   = digits.slice(-10);
-      const formatted = `+${country} ${local.slice(0, 5)} ${local.slice(5)}`.trim();
-      set("whatsappDisplay", formatted);
+      const local = digits.slice(-10);
+      set("whatsappDisplay", `+${country} ${local.slice(0, 5)} ${local.slice(5)}`.trim());
     }
   }
 
-  const waPreviewUrl = `https://wa.me/${draft.whatsappNumber}?text=${encodeURIComponent("Hello " + draft.businessName + "! I'd like to enquire about your furniture.")}`;
+  async function handleSaveAll() {
+    store.updateSettings(draft);
+    await fetch("/api/proxy/site-settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...draft,
+        announcementEnabled: String(draft.announcementEnabled),
+      }),
+    }).catch(() => {});
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  }
+
+  async function handleUpdateRate(rate: EstimatorRate, nextValue: number) {
+    setRates((prev) => prev.map((r) => (r.id === rate.id ? { ...r, ratePerSqFt: nextValue } : r)));
+    await fetch(`/api/proxy/estimator-rates/${rate.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ratePerSqFt: nextValue }),
+    }).catch(() => {});
+  }
+
+  async function handleAddRate() {
+    if (!newMaterial.trim()) return;
+    const res = await fetch("/api/proxy/estimator-rates", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        material: newMaterial.trim(),
+        ratePerSqFt: Number(newRate) || 2000,
+        description: newDesc.trim() || null,
+      }),
+    }).catch(() => null);
+    if (res && res.ok) {
+      const json = await res.json();
+      if (json.data) {
+        setRates((prev) => [...prev.filter((r) => r.id !== json.data.id), json.data]);
+      }
+    }
+    setNewMaterial("");
+    setNewRate("2000");
+    setNewDesc("");
+  }
+
+  async function handleDeleteRate(id: string) {
+    setRates((prev) => prev.filter((r) => r.id !== id));
+    await fetch(`/api/proxy/estimator-rates/${id}`, { method: "DELETE" }).catch(() => {});
+  }
 
   return (
-    <div className="p-6 lg:p-8 max-w-3xl">
-
-      {/* Header */}
+    <div className="p-6 lg:p-8 max-w-4xl bg-alabaster min-h-full">
       <div className="flex items-start justify-between mb-8 gap-4">
         <div>
-          <h1 className="text-xl font-semibold text-stone-900">Settings</h1>
-          <p className="text-sm text-stone-500 mt-0.5">
-            Manage your business info, WhatsApp number, and storefront settings.
+          <p className="section-label mb-1">Square Cube Furniture · Studio Configuration</p>
+          <h1 className="text-2xl font-display font-semibold text-espresso">
+            Estimator Rates &amp; Store Settings
+          </h1>
+          <p className="text-sm font-ui text-espresso/60 mt-0.5">
+            Control live Custom Studio wood rates, homepage banners, and official WhatsApp number.
           </p>
         </div>
         <button
-          onClick={handleSave}
+          onClick={handleSaveAll}
           className={cn(
-            "flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all flex-shrink-0",
-            saved
-              ? "bg-green-600 text-white"
-              : "bg-stone-900 text-white hover:bg-stone-700"
+            "flex items-center gap-2 px-5 py-2.5 text-xs font-ui font-semibold uppercase tracking-wider transition-all flex-shrink-0",
+            saved ? "bg-emerald-600 text-white" : "bg-espresso text-white hover:bg-champagne"
           )}
         >
-          {saved ? (
-            <><Check size={14} /> Saved!</>
-          ) : (
-            "Save Changes"
-          )}
+          {saved ? <><Check size={14} /> Saved</> : "Save All Settings"}
         </button>
       </div>
 
       <div className="space-y-6">
+        {/* Estimator Rates */}
+        <section className="bg-white border border-warm-border shadow-luxury">
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-warm-border bg-alabaster">
+            <Calculator size={17} className="text-champagne" />
+            <div>
+              <h2 className="font-display text-lg font-semibold text-espresso">
+                Custom Studio Timber Rates (INR / sq.ft)
+              </h2>
+              <p className="text-xs font-ui text-espresso/55">
+                Used immediately by the Custom Studio Live Price Estimator.
+              </p>
+            </div>
+          </div>
+          <div className="p-6 space-y-3">
+            {rates.map((r) => (
+              <div key={r.id} className="flex flex-wrap items-center gap-3 p-3 bg-alabaster border border-warm-border">
+                <div className="flex-1 min-w-[160px]">
+                  <p className="font-ui text-sm font-semibold text-espresso">{r.material}</p>
+                  {r.description && <p className="text-xs text-espresso/50">{r.description}</p>}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-ui text-espresso/60">₹</span>
+                  <input
+                    type="number"
+                    value={r.ratePerSqFt}
+                    onChange={(e) => handleUpdateRate(r, parseFloat(e.target.value) || 0)}
+                    className="w-28 input-luxury py-1.5 text-center font-semibold"
+                  />
+                  <span className="text-xs font-ui text-espresso/50">/ sq.ft</span>
+                </div>
+                <button
+                  onClick={() => handleDeleteRate(r.id)}
+                  className="p-1.5 text-espresso/45 hover:text-red-600"
+                  title="Remove material rate"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
 
-        {/* ── WhatsApp ── */}
-        <Section
-          icon={MessageCircle}
-          title="WhatsApp Contact"
-          description="This number appears on every quote button, product card, and contact CTA across your store."
-        >
-          <Field
-            label="WhatsApp Number"
-            hint="Include country code with no spaces or dashes. India: 91 + 10-digit number."
-          >
-            <div className="flex gap-2">
+            <div className="pt-3 border-t border-warm-border flex flex-wrap gap-2">
               <input
-                type="text"
-                value={draft.whatsappNumber}
-                onChange={(e) => handleWANumberChange(e.target.value)}
-                placeholder="919876543210"
-                className="input-base font-mono text-sm flex-1"
-                maxLength={15}
+                value={newMaterial}
+                onChange={(e) => setNewMaterial(e.target.value)}
+                placeholder="New material (e.g. Jackwood)"
+                className="input-luxury flex-1 min-w-[160px] text-xs"
+              />
+              <input
+                type="number"
+                value={newRate}
+                onChange={(e) => setNewRate(e.target.value)}
+                placeholder="Rate ₹/sq.ft"
+                className="input-luxury w-28 text-xs text-center"
+              />
+              <input
+                value={newDesc}
+                onChange={(e) => setNewDesc(e.target.value)}
+                placeholder="Short note"
+                className="input-luxury flex-1 min-w-[140px] text-xs"
               />
               <button
                 type="button"
-                onClick={() => setShowWAPreview((v) => !v)}
-                title="Preview WhatsApp link"
-                className="px-3 border border-stone-200 text-stone-500 hover:text-stone-900 hover:border-stone-400 transition-colors"
+                onClick={handleAddRate}
+                className="btn-outline py-2 px-4 text-xs"
               >
-                {showWAPreview ? <EyeOff size={15} /> : <Eye size={15} />}
+                <Plus size={14} /> Add Rate
               </button>
             </div>
-            {showWAPreview && (
-              <div className="mt-2 p-3 bg-stone-50 border border-stone-200 text-xs break-all">
-                <span className="text-stone-400">Preview URL: </span>
-                <a
-                  href={waPreviewUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#25D366] underline"
-                >
-                  {waPreviewUrl}
-                </a>
-              </div>
-            )}
-          </Field>
-
-          <Field
-            label="Display Text"
-            hint="Shown in the footer and contact bar. E.g. +91 98765 43210"
-          >
-            <input
-              type="text"
-              value={draft.whatsappDisplay}
-              onChange={(e) => set("whatsappDisplay", e.target.value)}
-              placeholder="+91 98765 43210"
-              className="input-base text-sm"
-            />
-          </Field>
-        </Section>
-
-        {/* ── Business Info ── */}
-        <Section
-          icon={Building2}
-          title="Business Information"
-          description="Displayed in the site header, footer, and admin panel."
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Business Name">
-              <input
-                type="text"
-                value={draft.businessName}
-                onChange={(e) => set("businessName", e.target.value)}
-                placeholder="Square Cube"
-                className="input-base text-sm"
-              />
-            </Field>
-            <Field label="Tagline">
-              <input
-                type="text"
-                value={draft.businessTagline}
-                onChange={(e) => set("businessTagline", e.target.value)}
-                placeholder="Bespoke Furniture"
-                className="input-base text-sm"
-              />
-            </Field>
-            <Field label="Business Email">
-              <input
-                type="email"
-                value={draft.businessEmail}
-                onChange={(e) => set("businessEmail", e.target.value)}
-                placeholder="hello@squarecube.in"
-                className="input-base text-sm"
-              />
-            </Field>
-            <Field label="City / Location">
-              <input
-                type="text"
-                value={draft.businessCity}
-                onChange={(e) => set("businessCity", e.target.value)}
-                placeholder="Pune, India"
-                className="input-base text-sm"
-              />
-            </Field>
           </div>
-        </Section>
+        </section>
 
-        {/* ── Announcement Bar ── */}
-        <Section
-          icon={Megaphone}
-          title="Announcement Bar"
-          description="The strip at the very top of your store. Use it for promotions, offers, or delivery info."
-        >
-          <Field label="Announcement Text">
-            <textarea
-              rows={2}
-              value={draft.announcementText}
-              onChange={(e) => set("announcementText", e.target.value)}
-              placeholder="✦ Free delivery on orders above ₹50,000  ·  WhatsApp us for a free consultation"
-              className="input-base text-sm resize-none"
-            />
-          </Field>
-
-          <div className="flex items-center justify-between p-4 bg-stone-50 border border-stone-200">
+        {/* WhatsApp Contact */}
+        <section className="bg-white border border-warm-border shadow-luxury">
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-warm-border bg-alabaster">
+            <MessageCircle size={17} className="text-champagne" />
             <div>
-              <p className="text-sm font-medium text-stone-800">Show announcement bar</p>
-              <p className="text-xs text-stone-400 mt-0.5">
-                When off, the bar is hidden for all visitors
+              <h2 className="font-display text-lg font-semibold text-espresso">
+                Official Shop WhatsApp Number
+              </h2>
+              <p className="text-xs font-ui text-espresso/55">
+                Digits with country code, no &quot;+&quot; prefix (default: 918547097173).
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => set("announcementEnabled", !draft.announcementEnabled)}
-              className={cn(
-                "w-11 h-6 rounded-full transition-colors relative flex-shrink-0",
-                draft.announcementEnabled ? "bg-stone-900" : "bg-stone-300"
-              )}
-              aria-checked={draft.announcementEnabled}
-              role="switch"
-            >
-              <span className={cn(
-                "absolute top-1 w-4 h-4 rounded-full bg-white transition-transform",
-                draft.announcementEnabled ? "translate-x-6" : "translate-x-1"
-              )} />
-            </button>
           </div>
-
-          {/* Preview */}
-          {draft.announcementEnabled && (
-            <div className="bg-stone-900 text-white text-xs py-2 px-4 text-center">
-              <span className="tracking-wide">{draft.announcementText || "Announcement text preview"}</span>
+          <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="form-label">WhatsApp Digits</label>
+              <input
+                value={draft.whatsappNumber}
+                onChange={(e) => handleWANumberChange(e.target.value)}
+                placeholder="918547097173"
+                className="input-luxury font-mono"
+              />
             </div>
-          )}
-        </Section>
+            <div>
+              <label className="form-label">Display Format</label>
+              <input
+                value={draft.whatsappDisplay}
+                onChange={(e) => set("whatsappDisplay", e.target.value)}
+                placeholder="+91 85470 97173"
+                className="input-luxury"
+              />
+            </div>
+          </div>
+        </section>
 
-        {/* ── Save button ── */}
-        <div className="flex items-center justify-between pt-2">
-          <button
-            type="button"
-            onClick={() => setShowResetConfirm(true)}
-            className="flex items-center gap-1.5 text-xs text-stone-400 hover:text-red-500 transition-colors"
-          >
-            <RotateCcw size={12} />
-            Reset all to defaults
-          </button>
-          <button
-            onClick={handleSave}
-            className={cn(
-              "flex items-center gap-2 px-5 py-2.5 text-sm font-medium transition-all",
-              saved
-                ? "bg-green-600 text-white"
-                : "bg-stone-900 text-white hover:bg-stone-700"
-            )}
-          >
-            {saved ? <><Check size={14} /> Saved!</> : "Save Changes"}
-          </button>
-        </div>
+        {/* Homepage Banner & Announcement */}
+        <section className="bg-white border border-warm-border shadow-luxury">
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-warm-border bg-alabaster">
+            <ImageIcon size={17} className="text-champagne" />
+            <div>
+              <h2 className="font-display text-lg font-semibold text-espresso">
+                Homepage Banners &amp; Top Announcement
+              </h2>
+            </div>
+          </div>
+          <div className="p-6 space-y-4">
+            <div>
+              <label className="form-label">Hero Headline</label>
+              <input
+                value={draft.heroHeadline}
+                onChange={(e) => set("heroHeadline", e.target.value)}
+                className="input-luxury"
+              />
+            </div>
+            <div>
+              <label className="form-label">Hero Subheadline</label>
+              <textarea
+                rows={2}
+                value={draft.heroSubheadline}
+                onChange={(e) => set("heroSubheadline", e.target.value)}
+                className="input-luxury resize-none"
+              />
+            </div>
+            <div>
+              <label className="form-label">Hero Banner Image URL</label>
+              <input
+                value={draft.heroBannerUrl}
+                onChange={(e) => set("heroBannerUrl", e.target.value)}
+                className="input-luxury text-xs"
+              />
+            </div>
+            <div>
+              <label className="form-label flex items-center gap-2">
+                <Megaphone size={13} className="text-champagne" /> Top Announcement Strip
+              </label>
+              <input
+                value={draft.announcementText}
+                onChange={(e) => set("announcementText", e.target.value)}
+                className="input-luxury"
+              />
+              <label className="inline-flex items-center gap-2 mt-2 text-xs font-ui cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={draft.announcementEnabled}
+                  onChange={(e) => set("announcementEnabled", e.target.checked)}
+                  className="accent-espresso"
+                />
+                Show top announcement strip
+              </label>
+            </div>
+          </div>
+        </section>
+
+        {/* Business Info */}
+        <section className="bg-white border border-warm-border shadow-luxury">
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-warm-border bg-alabaster">
+            <Building2 size={17} className="text-champagne" />
+            <h2 className="font-display text-lg font-semibold text-espresso">
+              Business Identity
+            </h2>
+          </div>
+          <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="form-label">Brand Name</label>
+              <input
+                value={draft.businessName}
+                onChange={(e) => set("businessName", e.target.value)}
+                placeholder="Square Cube Furniture"
+                className="input-luxury"
+              />
+            </div>
+            <div>
+              <label className="form-label">Studio Tagline</label>
+              <input
+                value={draft.businessTagline}
+                onChange={(e) => set("businessTagline", e.target.value)}
+                placeholder="Architectural Woodcraft & Custom Studio"
+                className="input-luxury"
+              />
+            </div>
+            <div>
+              <label className="form-label">Business Email</label>
+              <input
+                value={draft.businessEmail}
+                onChange={(e) => set("businessEmail", e.target.value)}
+                className="input-luxury"
+              />
+            </div>
+            <div>
+              <label className="form-label">City / Region</label>
+              <input
+                value={draft.businessCity}
+                onChange={(e) => set("businessCity", e.target.value)}
+                className="input-luxury"
+              />
+            </div>
+          </div>
+        </section>
       </div>
-
-      {/* Reset confirmation modal */}
-      {showResetConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white p-6 max-w-sm w-full shadow-xl text-center">
-            <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <AlertTriangle size={22} className="text-amber-600" />
-            </div>
-            <h3 className="font-semibold text-stone-900 mb-2">Reset all settings?</h3>
-            <p className="text-sm text-stone-500 mb-6">
-              This will restore all settings to their factory defaults including the WhatsApp number.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowResetConfirm(false)}
-                className="btn-ghost flex-1"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleReset}
-                className="flex-1 px-4 py-2.5 bg-amber-600 text-white text-sm font-medium hover:bg-amber-700 transition-colors"
-              >
-                Reset
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

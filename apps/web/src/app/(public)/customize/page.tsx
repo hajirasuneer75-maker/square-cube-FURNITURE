@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import CustomOrderForm from "@/components/customize/CustomOrderForm";
 
 export const metadata: Metadata = {
-  title:       "Custom Furniture Request | Square Cube",
-  description: "Tell us your vision — wood, dimensions, finish, budget. Our craftsmen respond with a detailed quote within 2–3 hours.",
+  title:       "Custom Furniture Request",
+  description: "Tell us your vision — wood, dimensions, finish, budget. Square Cube Furniture craftsmen respond with a detailed quote within 2–3 hours.",
 };
 
 export default function CustomizePage() {

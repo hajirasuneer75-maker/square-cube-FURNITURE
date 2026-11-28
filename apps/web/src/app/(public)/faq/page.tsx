@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ChevronDown, MessageCircle } from "lucide-react";
 import { useSettingsStore } from "@/store/useSettingsStore";
-import { cn } from "@/lib/utils";
+import { cn, generateWhatsAppUrl } from "@/lib/utils";
 
 const FAQS: { category: string; items: { q: string; a: string }[] }[] = [
   {
@@ -79,7 +79,7 @@ const FAQS: { category: string; items: { q: string; a: string }[] }[] = [
       },
       {
         q: "What payment methods do you accept?",
-        a: "We accept UPI (Google Pay, PhonePe, Paytm), NEFT/IMPS bank transfer, and cheques for large orders. We don't accept cash on delivery for custom orders due to their bespoke nature.",
+        a: "We accept UPI (Google Pay, PhonePe, Paytm), NEFT/IMPS bank transfer, and cheques for large orders. We don't accept cash on delivery for custom orders due to their made-to-order nature.",
       },
       {
         q: "Can I get a GST invoice?",
@@ -121,7 +121,7 @@ function AccordionItem({ q, a }: { q: string; a: string }) {
 
 export default function FAQPage() {
   const { whatsappNumber } = useSettingsStore();
-  const waHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent("Hello Square Cube! I have a question.")}`;
+  const waHref = generateWhatsAppUrl(whatsappNumber, "Hello Square Cube Furniture! I have a question.");
 
   return (
     <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-10">

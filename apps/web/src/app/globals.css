@@ -3,17 +3,15 @@
 @tailwind utilities;
 
 @layer base {
-  * {
-    box-sizing: border-box;
-  }
+  * { box-sizing: border-box; }
 
-  html {
-    scroll-behavior: smooth;
-  }
+  html { scroll-behavior: smooth; }
 
   body {
-    @apply bg-stone-50 text-stone-900 antialiased font-sans;
-    font-feature-settings: "kern" 1, "liga" 1;
+    @apply antialiased font-ui;
+    background-color: #F8F5F0;
+    color: #231F1E;
+    font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
   }
 
   h1, h2, h3, h4, h5 {
@@ -22,29 +20,48 @@
 
   ::-webkit-scrollbar        { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track  { background: transparent; }
-  ::-webkit-scrollbar-thumb  { @apply bg-stone-300 rounded-full; }
-  ::-webkit-scrollbar-thumb:hover { @apply bg-stone-400; }
+  ::-webkit-scrollbar-thumb  { background: #D4B090; border-radius: 999px; }
+  ::-webkit-scrollbar-thumb:hover { background: #B08968; }
 }
 
 @layer components {
+  /* ── Luxury Buttons ───────────────────────────────────── */
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2
-           px-6 py-3 bg-stone-900 text-white text-sm font-medium tracking-wide
-           hover:bg-stone-700 active:bg-stone-800
-           transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+           px-6 py-3 bg-espresso text-white text-sm font-medium tracking-widest uppercase
+           hover:bg-champagne active:opacity-90
+           transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed;
+    letter-spacing: 0.12em;
+  }
+
+  .btn-champagne {
+    @apply inline-flex items-center justify-center gap-2
+           px-6 py-3 bg-champagne text-white text-sm font-medium tracking-widest uppercase
+           hover:bg-bronze-600 active:opacity-90
+           transition-all duration-300;
+    letter-spacing: 0.12em;
   }
 
   .btn-outline {
     @apply inline-flex items-center justify-center gap-2
-           px-6 py-3 border border-stone-900 text-stone-900 text-sm font-medium tracking-wide
-           hover:bg-stone-900 hover:text-white
-           transition-colors duration-200;
+           px-6 py-3 border border-espresso text-espresso text-sm font-medium tracking-widest uppercase
+           hover:bg-espresso hover:text-white
+           transition-all duration-300;
+    letter-spacing: 0.12em;
+  }
+
+  .btn-outline-champagne {
+    @apply inline-flex items-center justify-center gap-2
+           px-6 py-3 border border-champagne text-champagne text-sm font-medium tracking-widest uppercase
+           hover:bg-champagne hover:text-white
+           transition-all duration-300;
+    letter-spacing: 0.12em;
   }
 
   .btn-ghost {
     @apply inline-flex items-center justify-center gap-2
-           px-4 py-2 text-stone-600 text-sm font-medium
-           hover:bg-stone-100 hover:text-stone-900
+           px-4 py-2 text-espresso/70 text-sm font-medium
+           hover:bg-warm-border hover:text-espresso
            transition-colors duration-200;
   }
 
@@ -57,22 +74,62 @@
   .btn-whatsapp:hover  { background-color: #1ebe5d; }
   .btn-whatsapp:active { background-color: #17a050; }
 
+  /* ── Typography ───────────────────────────────────────── */
   .section-label {
-    @apply text-xs font-medium tracking-[0.15em] uppercase text-gold-600;
+    @apply text-[10px] font-ui font-semibold tracking-[0.22em] uppercase text-champagne;
+  }
+
+  .editorial-heading {
+    @apply font-display font-semibold tracking-tight text-espresso;
+  }
+
+  /* ── Form Elements ────────────────────────────────────── */
+  .input-luxury {
+    @apply w-full border border-warm-border bg-white px-4 py-3 text-sm text-espresso
+           placeholder:text-espresso/40
+           focus:outline-none focus:border-champagne focus:ring-1 focus:ring-champagne/20
+           transition-colors duration-200;
   }
 
   .input-base {
-    @apply w-full border border-stone-200 px-4 py-2.5 text-sm text-stone-900
-           placeholder:text-stone-400
-           focus:outline-none focus:border-stone-400
-           transition-colors duration-200 bg-white;
+    @apply w-full border border-warm-border bg-white px-4 py-2.5 text-sm text-espresso
+           placeholder:text-espresso/40
+           focus:outline-none focus:border-champagne
+           transition-colors duration-200;
   }
 
   .form-label {
-    @apply block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1.5;
+    @apply block text-[10px] font-semibold text-espresso/50 uppercase tracking-[0.16em] mb-2;
   }
 
   .detail-section-label {
-    @apply block text-[10px] font-semibold text-stone-400 uppercase tracking-widest mb-2;
+    @apply block text-[10px] font-semibold text-espresso/40 uppercase tracking-widest mb-2;
+  }
+
+  /* ── Cards ────────────────────────────────────────────── */
+  .luxury-card {
+    @apply bg-white border border-warm-border shadow-luxury hover:shadow-luxury-hover
+           transition-all duration-300;
+  }
+
+  /* ── Shimmer loader ───────────────────────────────────── */
+  .shimmer {
+    background: linear-gradient(90deg, #F8F5F0 25%, #F2EDE6 50%, #F8F5F0 75%);
+    background-size: 200% 100%;
+    @apply animate-shimmer;
+  }
+
+  /* ── Mode Switcher Pill ───────────────────────────────── */
+  .mode-pill {
+    @apply px-6 py-2.5 text-xs font-ui font-semibold tracking-[0.18em] uppercase
+           transition-all duration-300 cursor-pointer;
+  }
+
+  .mode-pill-active {
+    @apply bg-espresso text-white;
+  }
+
+  .mode-pill-inactive {
+    @apply text-espresso/60 hover:text-espresso;
   }
 }

@@ -26,9 +26,9 @@ export default function WishlistPage() {
     );
   }
 
-  const WA_NUMBER = whatsappNumber;
+  const WA_NUMBER = whatsappNumber || process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "918547097173";
   const waText = encodeURIComponent(
-    `Hello Square Cube! 👋\n\nI'm interested in the following items from my wishlist:\n\n${items
+    `Hello Square Cube Furniture! 👋\n\nI'm interested in the following items from my wishlist:\n\n${items
       .map((i) => `• ${i.productName} — ${formatPrice(i.basePrice)}`)
       .join("\n")}\n\nPlease provide more details and pricing.`
   );

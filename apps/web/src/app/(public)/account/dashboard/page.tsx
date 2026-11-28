@@ -59,7 +59,7 @@ export default function AccountDashboardPage() {
           </Link>
 
           <a
-            href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent("Hello Square Cube! I would like to track my order.")}`}
+            href={`https://wa.me/${whatsappNumber || process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "918547097173"}?text=${encodeURIComponent("Hello Square Cube Furniture! I would like to track my order.")}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-between p-5 bg-white border border-stone-200 hover:border-stone-400 transition-colors group"

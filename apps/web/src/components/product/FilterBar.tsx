@@ -13,7 +13,7 @@ const SORT_OPTIONS: { label: string; value: SortOption }[] = [
 ];
 
 const WOOD_OPTIONS = [
-  "Teak", "Sheesham", "Oak", "Mahogany", "Plywood", "MDF", "Engineered Wood",
+  "Nilambur Teak", "Mahogany", "Rosewood", "Sheesham", "Marine Ply + Veneer", "Oak", "MDF",
 ];
 
 const PRICE_RANGES: { label: string; min?: number; max?: number }[] = [

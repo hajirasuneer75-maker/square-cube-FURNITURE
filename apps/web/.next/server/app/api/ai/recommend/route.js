@@ -1,26 +1,8 @@
-"use strict";(()=>{var e={};e.id=471,e.ids=[471],e.modules={399:e=>{e.exports=require("next/dist/compiled/next-server/app-page.runtime.prod.js")},517:e=>{e.exports=require("next/dist/compiled/next-server/app-route.runtime.prod.js")},7147:e=>{e.exports=require("fs")},3685:e=>{e.exports=require("http")},5687:e=>{e.exports=require("https")},7561:e=>{e.exports=require("node:fs")},4492:e=>{e.exports=require("node:stream")},2477:e=>{e.exports=require("node:stream/web")},1017:e=>{e.exports=require("path")},5477:e=>{e.exports=require("punycode")},2781:e=>{e.exports=require("stream")},5034:e=>{e.exports=require("url")},3837:e=>{e.exports=require("util")},1267:e=>{e.exports=require("worker_threads")},9796:e=>{e.exports=require("zlib")},9625:(e,r,t)=>{t.r(r),t.d(r,{originalPathname:()=>g,patchFetch:()=>x,requestAsyncStorage:()=>m,routeModule:()=>d,serverHooks:()=>h,staticGenerationAsyncStorage:()=>l});var s={};t.r(s),t.d(s,{POST:()=>p});var a=t(3036),o=t(5736),n=t(5262),i=t(942);let u=new(t(2876)).ZP({apiKey:process.env.ANTHROPIC_API_KEY}),c=`
-Available product categories and slugs (use these EXACT slugs):
-- Sofas: classic-chesterfield-sofa, l-shaped-sectional, two-seater-lovechair
-- Beds: queen-platform-bed, storage-king-bed
-- Dining: six-seater-dining-table, farmhouse-dining-set
-- Tables: walnut-coffee-table, glass-side-table, laptop-writing-desk
-- Storage: oak-bookshelf, chest-of-drawers, wardrobe-with-mirror
-- Chairs: accent-armchair, bar-stool-set, rocking-chair
-- Outdoor: teak-garden-bench, patio-dining-set
-`.trim();async function p(e){let r;try{r=await e.json()}catch{return i.NextResponse.json({error:"Invalid JSON."},{status:400})}let{query:t}=r;if(!t||"string"!=typeof t||t.trim().length<3)return i.NextResponse.json({error:"query must be at least 3 characters."},{status:400});let s=`You are a furniture recommendation engine for Square Cube, a premium custom furniture brand.
+"use strict";(()=>{var e={};e.id=471,e.ids=[471],e.modules={399:e=>{e.exports=require("next/dist/compiled/next-server/app-page.runtime.prod.js")},517:e=>{e.exports=require("next/dist/compiled/next-server/app-route.runtime.prod.js")},9625:(e,t,r)=>{r.r(t),r.d(t,{originalPathname:()=>h,patchFetch:()=>f,requestAsyncStorage:()=>m,routeModule:()=>p,serverHooks:()=>g,staticGenerationAsyncStorage:()=>d});var s={};r.r(s),r.d(s,{POST:()=>l});var a=r(3036),o=r(5736),n=r(5262),i=r(942),u=r(2346),c=r(4634);async function l(e){let t;try{t=await e.json()}catch{return i.NextResponse.json({error:"Invalid JSON."},{status:400})}let{query:r}=t;if(!r||"string"!=typeof r||r.trim().length<3)return i.NextResponse.json({error:"query must be at least 3 characters."},{status:400});let s=await (0,c.Rl)(),a=process.env.GEMINI_API_KEY?.trim(),o=()=>{let e=r.toLowerCase().split(/\s+/).filter(e=>e.length>2),t=s.map(t=>{let r=`${t.name} ${t.shortDescription} ${t.categoryName} ${(t.availableWoods??[]).map(e=>e.name).join(" ")}`.toLowerCase();return{p:t,score:e.reduce((e,t)=>e+(r.includes(t)?1:0),0)}}).filter(e=>e.score>0).sort((e,t)=>t.score-e.score).slice(0,3);return{recommendations:(t.length>0?t.map(e=>e.p):s.filter(e=>e.isFeatured).slice(0,3)).map(e=>({slug:e.slug,reason:`Matches your search in Square Cube Furniture's ${e.categoryName} collection.`}))}};if(!a)return i.NextResponse.json({success:!0,data:o()});try{let e=new u.$D(a).getGenerativeModel({model:"gemini-2.5-flash"}),t=s.map(e=>`- ${e.slug} | ${e.name} | ${e.categoryName} | ${e.shortDescription}`).join("\n"),n=`You are a furniture recommendation engine for Square Cube Furniture.
+Select 1 to 3 best matching slugs from this catalog for the query: "${r.trim()}".
 
-Given a customer's natural-language description, recommend 1–3 matching products from the catalogue below.
+Catalog:
+${t}
 
-${c}
-
-Customer query: "${t.trim()}"
-
-Respond with ONLY a JSON object — no markdown, no code fences, no explanation:
-{
-  "recommendations": [
-    { "slug": "<exact-slug-from-catalogue>", "reason": "<one sentence why this matches>" },
-    ...
-  ]
-}
-
-If no products match, return: { "recommendations": [] }`;try{let e;let r=(await u.messages.create({model:"claude-haiku-4-5-20251001",max_tokens:400,messages:[{role:"user",content:s}]})).content.filter(e=>"text"===e.type).map(e=>e.text).join("");try{e=JSON.parse(r.trim())}catch{let t=r.match(/\{[\s\S]*\}/);e=t?JSON.parse(t[0]):{recommendations:[]}}return i.NextResponse.json({success:!0,data:e})}catch(e){return console.error("[ai/recommend]",e),i.NextResponse.json({error:"Recommendation failed."},{status:500})}}let d=new a.AppRouteRouteModule({definition:{kind:o.x.APP_ROUTE,page:"/api/ai/recommend/route",pathname:"/api/ai/recommend",filename:"route",bundlePath:"app/api/ai/recommend/route"},resolvedPagePath:"C:\\Users\\USER\\Downloads\\square-cube-FURNITURE\\apps\\web\\src\\app\\api\\ai\\recommend\\route.ts",nextConfigOutput:"",userland:s}),{requestAsyncStorage:m,staticGenerationAsyncStorage:l,serverHooks:h}=d,g="/api/ai/recommend/route";function x(){return(0,n.patchFetch)({serverHooks:h,staticGenerationAsyncStorage:l})}}};var r=require("../../../../webpack-runtime.js");r.C(e);var t=e=>r(r.s=e),s=r.X(0,[522,746,876],()=>t(9625));module.exports=s})();
+Return ONLY valid JSON:
+{ "recommendations": [ { "slug": "<exact-slug>", "reason": "<one concise sentence>" } ] }`,c=(await e.generateContent(n)).response.text().match(/\{[\s\S]*\}/),l=c?JSON.parse(c[0]):o();return i.NextResponse.json({success:!0,data:l})}catch{return i.NextResponse.json({success:!0,data:o()})}}let p=new a.AppRouteRouteModule({definition:{kind:o.x.APP_ROUTE,page:"/api/ai/recommend/route",pathname:"/api/ai/recommend",filename:"route",bundlePath:"app/api/ai/recommend/route"},resolvedPagePath:"C:\\Users\\USER\\Downloads\\square-cube-FURNITURE\\apps\\web\\src\\app\\api\\ai\\recommend\\route.ts",nextConfigOutput:"",userland:s}),{requestAsyncStorage:m,staticGenerationAsyncStorage:d,serverHooks:g}=p,h="/api/ai/recommend/route";function f(){return(0,n.patchFetch)({serverHooks:g,staticGenerationAsyncStorage:d})}}};var t=require("../../../../webpack-runtime.js");t.C(e);var r=e=>t(t.s=e),s=t.X(0,[522,746,346,634],()=>r(9625));module.exports=s})();

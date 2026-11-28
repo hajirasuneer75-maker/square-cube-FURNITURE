@@ -1,0 +1,4 @@
+
+> @square-cube/api@0.1.0 build
+> tsc --project tsconfig.json
+

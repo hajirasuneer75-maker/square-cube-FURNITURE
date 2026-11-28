@@ -53,10 +53,10 @@ export default function CategorySidebar({ activeSlug }: CategorySidebarProps) {
             We build furniture to your exact requirements.
           </p>
           <Link
-            href="/customize"
-            className="text-xs font-medium text-gold-400 hover:text-gold-300 transition-colors underline underline-offset-2"
+            href="/custom-furniture"
+            className="text-xs font-medium text-champagne hover:opacity-80 transition-opacity underline underline-offset-2"
           >
-            Start Custom Order →
+            Open Custom Studio →
           </Link>
         </div>
       </div>

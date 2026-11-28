@@ -28,7 +28,7 @@ export default function WAButton({
 
   useEffect(() => setMounted(true), []);
 
-  const number = mounted ? whatsappNumber : "919876543210";
+  const number = mounted ? whatsappNumber : (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "918547097173");
   const base   = `https://wa.me/${number}`;
   const href   = text ? `${base}?text=${encodeURIComponent(text)}` : base;
 

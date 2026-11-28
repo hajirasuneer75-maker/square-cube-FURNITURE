@@ -1,124 +1,133 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Package, MessageSquare, IndianRupee, TrendingUp } from "lucide-react";
+import { Package, MessageSquare, Wrench, FolderTree } from "lucide-react";
 import { MOCK_PRODUCTS } from "@/lib/constants/mockData";
 import Link from "next/link";
 
-const MOCK_OPEN_ENQUIRIES = 1; // "new" in MOCK_ENQUIRIES
 const QUICK_LINKS = [
-  { label: "View all enquiries",  href: "/admin/enquiries" },
-  { label: "Add a new product",   href: "/admin/products"  },
-  { label: "Open the store →",    href: "/"                },
+  { label: "Manage Categories & Cover Images", href: "/admin/categories" },
+  { label: "Add or Edit Products & Swatches", href: "/admin/products" },
+  { label: "Review Enquiries & Maintenance Tickets", href: "/admin/enquiries" },
+  { label: "Configure Estimator Rates & WhatsApp", href: "/admin/settings" },
+  { label: "Open Storefront →", href: "/" },
 ];
 
 const SYSTEM = [
-  { label: "Database",     status: "PostgreSQL · Connected",  ok: true  },
-  { label: "File Storage", status: "Cloudinary · Active",     ok: true  },
-  { label: "WhatsApp",     status: "wa.me deep links",        ok: true  },
-  { label: "Payments",     status: "Coming soon",             ok: false },
+  { label: "Database", status: "PostgreSQL · Neon Connected", ok: true },
+  { label: "AI Room Stylist", status: "Google Gemini Free Tier + Fallback", ok: true },
+  { label: "File Storage", status: "Cloudinary Integration", ok: true },
+  { label: "WhatsApp Concierge", status: "+91 85470 97173", ok: true },
 ];
 
 export default function AdminDashboardPage() {
-  const [openEnquiries, setOpenEnquiries] = useState(MOCK_OPEN_ENQUIRIES);
-  const [totalEnquiries, setTotalEnquiries] = useState(4);
+  const [productCount, setProductCount] = useState(MOCK_PRODUCTS.length);
+  const [categoryCount, setCategoryCount] = useState(10);
+  const [openEnquiries, setOpenEnquiries] = useState(0);
+  const [openTickets, setOpenTickets] = useState(0);
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("sc-enquiries");
-      if (stored) {
-        const real = JSON.parse(stored) as { status: string }[];
-        const newFromForm = real.filter((e) => e.status === "new").length;
-        setOpenEnquiries(MOCK_OPEN_ENQUIRIES + newFromForm);
-        setTotalEnquiries(4 + real.length);
-      }
-    } catch { /* localStorage unavailable */ }
+    Promise.all([
+      fetch("/api/proxy/admin/products").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch("/api/proxy/categories").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch("/api/proxy/admin/enquiries/stats").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch("/api/proxy/admin/maintenance/stats").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+    ]).then(([prods, cats, enq, maint]) => {
+      if (prods?.success && Array.isArray(prods.data)) setProductCount(prods.data.length);
+      if (cats?.success && Array.isArray(cats.data)) setCategoryCount(cats.data.length);
+      if (enq?.success && enq.data) setOpenEnquiries(enq.data.pending ?? 0);
+      if (maint?.success && maint.data) setOpenTickets(maint.data.open ?? 0);
+    });
   }, []);
 
   const stats = [
     {
-      label:  "Total Products",
-      value:  String(MOCK_PRODUCTS.length),
-      sub:    `${MOCK_PRODUCTS.filter((p) => p.isFeatured).length} featured`,
-      icon:   Package,
-      accent: "text-blue-600 bg-blue-50",
+      label: "Categories",
+      value: String(categoryCount),
+      sub: "Live database categories",
+      icon: FolderTree,
+      accent: "text-champagne bg-bronze-50",
     },
     {
-      label:  "Open Enquiries",
-      value:  String(openEnquiries),
-      sub:    `${totalEnquiries} total`,
-      icon:   MessageSquare,
-      accent: "text-amber-600 bg-amber-50",
+      label: "Catalog Products",
+      value: String(productCount),
+      sub: "Active & draft pieces",
+      icon: Package,
+      accent: "text-espresso bg-alabaster",
     },
     {
-      label:  "Est. Revenue (Dec)",
-      value:  "₹4.2L",
-      sub:    "+18% vs November",
-      icon:   IndianRupee,
-      accent: "text-green-600 bg-green-50",
+      label: "Pending Enquiries",
+      value: String(openEnquiries),
+      sub: "Custom Studio requests",
+      icon: MessageSquare,
+      accent: "text-amber-700 bg-amber-50",
     },
     {
-      label:  "Avg. Order Value",
-      value:  "₹58,000",
-      sub:    "Based on 12 orders",
-      icon:   TrendingUp,
-      accent: "text-purple-600 bg-purple-50",
+      label: "Open Maintenance",
+      value: String(openTickets),
+      sub: "Restoration & repair tickets",
+      icon: Wrench,
+      accent: "text-emerald-700 bg-emerald-50",
     },
   ];
 
   return (
-    <div className="p-6 lg:p-8 max-w-6xl">
-
+    <div className="p-6 lg:p-8 max-w-6xl bg-alabaster min-h-full">
       <div className="mb-8">
-        <h1 className="text-2xl font-display font-semibold text-stone-900">Dashboard</h1>
-        <p className="text-sm text-stone-500 mt-1">
-          Welcome back. Here&apos;s what&apos;s happening with Square Cube.
+        <p className="section-label mb-1">Square Cube Furniture · Control Center</p>
+        <h1 className="text-3xl font-display font-semibold text-espresso">Admin Overview</h1>
+        <p className="text-sm font-ui text-espresso/60 mt-1">
+          Full store, category, custom estimator rate, and maintenance management without touching code.
         </p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
         {stats.map(({ label, value, sub, icon: Icon, accent }) => (
-          <div key={label} className="bg-white border border-stone-200 p-5">
+          <div key={label} className="bg-white border border-warm-border p-5 shadow-luxury">
             <div className="flex items-start justify-between mb-4">
-              <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">{label}</p>
+              <p className="text-[11px] font-ui font-semibold text-espresso/55 uppercase tracking-wider">
+                {label}
+              </p>
               <div className={`w-8 h-8 flex items-center justify-center rounded-full ${accent}`}>
                 <Icon size={15} />
               </div>
             </div>
-            <p className="text-3xl font-display font-semibold text-stone-900 mb-1">{value}</p>
-            <p className="text-xs text-stone-400">{sub}</p>
+            <p className="text-3xl font-display font-semibold text-espresso mb-1">{value}</p>
+            <p className="text-xs font-ui text-espresso/45">{sub}</p>
           </div>
         ))}
       </div>
 
       {/* Bottom grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Quick links */}
-        <div className="bg-white border border-stone-200 p-5">
-          <h2 className="text-sm font-semibold text-stone-700 mb-4">Quick Actions</h2>
-          <div className="space-y-1.5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div className="bg-white border border-warm-border p-6 shadow-luxury">
+          <h2 className="text-sm font-ui font-semibold text-espresso mb-4 uppercase tracking-wider">
+            Quick Actions
+          </h2>
+          <div className="space-y-2">
             {QUICK_LINKS.map(({ label, href }) => (
               <Link
                 key={href}
                 href={href}
-                className="flex items-center justify-between p-3 bg-stone-50 hover:bg-stone-100 transition-colors text-sm text-stone-700 group"
+                className="flex items-center justify-between p-3 bg-alabaster hover:bg-silk transition-colors text-sm font-ui text-espresso group border border-warm-border"
               >
-                {label}
-                <span className="text-stone-300 group-hover:text-stone-600 transition-colors">→</span>
+                <span>{label}</span>
+                <span className="text-champagne group-hover:translate-x-0.5 transition-transform">→</span>
               </Link>
             ))}
           </div>
         </div>
 
-        {/* System status */}
-        <div className="bg-white border border-stone-200 p-5">
-          <h2 className="text-sm font-semibold text-stone-700 mb-4">System Status</h2>
+        <div className="bg-white border border-warm-border p-6 shadow-luxury">
+          <h2 className="text-sm font-ui font-semibold text-espresso mb-4 uppercase tracking-wider">
+            Platform Architecture
+          </h2>
           <div className="space-y-3">
             {SYSTEM.map(({ label, status, ok }) => (
-              <div key={label} className="flex items-center justify-between text-sm">
-                <span className="text-stone-500">{label}</span>
-                <span className={`text-xs font-medium px-2 py-0.5 ${ok ? "bg-green-50 text-green-700" : "bg-stone-100 text-stone-400"}`}>
+              <div key={label} className="flex items-center justify-between text-sm font-ui py-1 border-b border-warm-border last:border-none">
+                <span className="text-espresso/65">{label}</span>
+                <span className={`text-xs font-medium px-2.5 py-0.5 ${ok ? "bg-emerald-50 text-emerald-700" : "bg-alabaster text-espresso/45"}`}>
                   {status}
                 </span>
               </div>

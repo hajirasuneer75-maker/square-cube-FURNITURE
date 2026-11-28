@@ -1,6 +1,7 @@
 "use client";
 
 import { create } from "zustand";
+import { getWhatsAppNumber } from "@/lib/utils";
 
 interface SizeDimensions {
   length: string;
@@ -29,7 +30,7 @@ interface CustomizationStore extends CustomizationState {
   setCalculatedPrice: (price: number) => void;
   setCalculating: (isCalculating: boolean) => void;
   reset: () => void;
-  buildWhatsAppUrl: (whatsappNumber: string) => string;
+  buildWhatsAppUrl: (whatsappNumber?: string) => string;
 }
 
 const INITIAL_STATE: CustomizationState = {
@@ -75,9 +76,9 @@ export const useCustomizationStore = create<CustomizationStore>()((set, get) => 
   buildWhatsAppUrl: (whatsappNumber) => {
     const state = get();
     const lines: string[] = [
-      `Hello Square Cube! 👋`,
+      `Hello Square Cube Furniture! 👋`,
       ``,
-      `I am interested in: *${state.productName || "a product"}*`,
+      `I am interested in: *${state.productName || "a luxury piece"}*`,
     ];
 
     if (state.selectedWoodTypeName) {
@@ -87,21 +88,25 @@ export const useCustomizationStore = create<CustomizationStore>()((set, get) => 
     const { length, width, height } = state.size;
     const sizeParts = [
       length && `L: ${length}cm`,
-      width  && `W: ${width}cm`,
+      width && `W: ${width}cm`,
       height && `H: ${height}cm`,
     ].filter(Boolean);
-    if (sizeParts.length) lines.push(`Size: ${sizeParts.join(", ")}`);
+    if (sizeParts.length) lines.push(`Custom Size: ${sizeParts.join(", ")}`);
 
     Object.entries(state.customizations).forEach(([key, value]) => {
       lines.push(`${key}: ${value}`);
     });
 
+    if (state.calculatedPrice) {
+      lines.push(`Configured Price: ₹${state.calculatedPrice.toLocaleString("en-IN")}`);
+    }
+
     if (state.additionalNotes) {
       lines.push(``, `Notes: ${state.additionalNotes}`);
     }
 
-    lines.push(``, `Please provide more details and a price quote.`);
+    lines.push(``, `Please confirm availability and next steps. Thank you!`);
 
-    return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(lines.join("\n"))}`;
+    return `https://wa.me/${getWhatsAppNumber(whatsappNumber)}?text=${encodeURIComponent(lines.join("\n"))}`;
   },
 }));

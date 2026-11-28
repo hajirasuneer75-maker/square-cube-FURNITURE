@@ -4,26 +4,27 @@ export interface Category {
   id: string;
   name: string;
   slug: string;
-  description?: string;
-  imageUrl?: string;
-  icon?: string;
+  description?: string | null;
+  imageUrl?: string | null;
+  icon?: string | null;
   subcategories?: Category[];
+  _count?: { products: number };
 }
 
 export interface WoodType {
   id: string;
   name: string;
   slug: string;
-  description?: string;
+  description?: string | null;
   priceModifier: number;
   priceModifierType: "MULTIPLIER" | "FIXED_ADD" | "FIXED_PRICE";
-  imageUrl?: string;
+  imageUrl?: string | null;
 }
 
 export interface ProductImage {
   id: string;
   url: string;
-  altText?: string;
+  altText?: string | null;
   isPrimary: boolean;
   angle: "FRONT" | "BACK" | "LEFT" | "RIGHT" | "TOP" | "DETAIL" | "LIFESTYLE";
 }
@@ -35,6 +36,7 @@ export interface Product {
   shortDescription: string;
   description: string;
   basePrice: number;
+  offerPrice?: number | null;
   sku: string;
   categoryId: string;
   categoryName: string;
@@ -43,20 +45,49 @@ export interface Product {
   primaryImage: string;
   isFeatured: boolean;
   isActive: boolean;
-  manufacturingTime?: string;
-  deliveryTime?: string;
-  warranty?: string;
+  manufacturingTime?: string | null;
+  deliveryTime?: string | null;
+  warranty?: string | null;
   dimensions?: {
     length?: number;
     width?: number;
     height?: number;
   };
-  weight?: number;
-  careInstructions?: string;
+  dimensionsText?: string | null;
+  finishSwatches?: string[];
+  fabricSwatches?: string[];
+  stock?: number;
+  weight?: number | null;
+  careInstructions?: string | null;
   availableWoods?: WoodType[];
-  rating?: number;
+  rating?: number | null;
   reviewCount?: number;
   tags?: string[];
+}
+
+export interface EstimatorRate {
+  id: string;
+  material: string;
+  ratePerSqFt: number;
+  description?: string | null;
+  isActive: boolean;
+}
+
+export interface MaintenanceTicket {
+  id: string;
+  name: string;
+  phone: string;
+  email?: string | null;
+  city?: string | null;
+  serviceType: string;
+  furnitureItem: string;
+  issueDescription: string;
+  damagePhotos: string[];
+  preferredDate?: string | null;
+  status: "OPEN" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+  adminNotes?: string | null;
+  quotedPrice?: number | null;
+  createdAt: string;
 }
 
 // ─── Wishlist ─────────────────────────────────────────────────────────────────

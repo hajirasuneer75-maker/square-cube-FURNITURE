@@ -1,1 +1,1 @@
-{"version":1,"functions":{"/api/ai/quote":{},"/admin/products":{},"/admin/enquiries":{},"/admin/login":{},"/categories/[slug]":{},"/gallery":{},"/about":{},"/customize":{},"/login":{},"/products/[slug]":{}}}
+{"version":1,"functions":{"/api/ai/quote":{},"/api/ai/room-stylist":{},"/api/proxy/[...path]":{},"/admin/categories":{},"/admin/enquiries":{},"/admin/products":{},"/admin/login":{},"/ai-stylist":{},"/about":{},"/custom-furniture":{},"/categories/[slug]":{},"/customize":{},"/maintenance":{},"/login":{},"/gallery":{},"/products":{},"/products/[slug]":{},"/":{}}}

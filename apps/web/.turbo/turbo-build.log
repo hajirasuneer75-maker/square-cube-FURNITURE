@@ -1,0 +1,69 @@
+
+> square-cube-web@0.1.0 build
+> next build
+
+  ▲ Next.js 14.2.5
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/52) ...
+   Generating static pages (13/52) 
+   Generating static pages (26/52) 
+   Generating static pages (39/52) 
+ ✓ Generating static pages (52/52)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size     First Load JS
+┌ ƒ /                                       4.67 kB         128 kB
+├ ○ /_not-found                             873 B          87.9 kB
+├ ○ /about                                  187 B          99.1 kB
+├ ○ /account/dashboard                      3.17 kB        99.7 kB
+├ ○ /account/wishlist                       4.1 kB          112 kB
+├ ○ /admin                                  4.64 kB        98.5 kB
+├ ○ /admin/categories                       3.64 kB         107 kB
+├ ○ /admin/enquiries                        5 kB            104 kB
+├ ○ /admin/login                            1.61 kB        88.7 kB
+├ ○ /admin/products                         6.45 kB         110 kB
+├ ○ /admin/settings                         4.3 kB          106 kB
+├ ○ /ai-stylist                             5.79 kB         114 kB
+├ ƒ /api/ai/quote                           0 B                0 B
+├ ƒ /api/ai/recommend                       0 B                0 B
+├ ƒ /api/ai/room-stylist                    0 B                0 B
+├ ƒ /api/auth/login                         0 B                0 B
+├ ƒ /api/auth/logout                        0 B                0 B
+├ ƒ /api/custom-order                       0 B                0 B
+├ ƒ /api/proxy/[...path]                    0 B                0 B
+├ ● /categories/[slug]                      2.35 kB         116 kB
+├   ├ /categories/living-room
+├   ├ /categories/bedroom
+├   ├ /categories/dining-room
+├   └ [+12 more paths]
+├ ƒ /custom-furniture                       1.03 kB         108 kB
+├ ○ /customize                              9.54 kB         106 kB
+├ ○ /faq                                    4.86 kB         108 kB
+├ ○ /gallery                                187 B          99.1 kB
+├ ○ /login                                  1.58 kB         105 kB
+├ ○ /maintenance                            5.77 kB         107 kB
+├ ƒ /products                               6.28 kB         119 kB
+├ ● /products/[slug]                        12.3 kB         121 kB
+├   ├ /products/royal-teak-dining-table
+├   ├ /products/heritage-sheesham-wardrobe
+├   ├ /products/modern-l-shape-sofa
+├   └ [+6 more paths]
+└ ○ /register                               142 B          87.2 kB
++ First Load JS shared by all               87.1 kB
+  ├ chunks/1dd3208c-d52f7b7fad1194f4.js     53.6 kB
+  ├ chunks/286-6e7b09f29a65141d.js          31.5 kB
+  └ other shared chunks (total)             1.89 kB
+
+
+ƒ Middleware                                32.6 kB
+
+○  (Static)   prerendered as static content
+●  (SSG)      prerendered as static HTML (uses getStaticProps)
+ƒ  (Dynamic)  server-rendered on demand
+

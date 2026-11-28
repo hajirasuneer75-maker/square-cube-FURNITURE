@@ -1,27 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
-
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
-const PRODUCT_CATALOGUE = `
-Available product categories and slugs (use these EXACT slugs):
-- Sofas: classic-chesterfield-sofa, l-shaped-sectional, two-seater-lovechair
-- Beds: queen-platform-bed, storage-king-bed
-- Dining: six-seater-dining-table, farmhouse-dining-set
-- Tables: walnut-coffee-table, glass-side-table, laptop-writing-desk
-- Storage: oak-bookshelf, chest-of-drawers, wardrobe-with-mirror
-- Chairs: accent-armchair, bar-stool-set, rocking-chair
-- Outdoor: teak-garden-bench, patio-dining-set
-`.trim();
-
-interface Recommendation {
-  slug:   string;
-  reason: string;
-}
-
-interface RecommendResponse {
-  recommendations: Recommendation[];
-}
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { fetchProductsWithFallback } from "@/lib/api";
 
 export async function POST(request: NextRequest) {
   let body: { query?: string };
@@ -36,50 +15,58 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "query must be at least 3 characters." }, { status: 400 });
   }
 
-  const prompt = `You are a furniture recommendation engine for Square Cube, a premium custom furniture brand.
+  const catalog = await fetchProductsWithFallback();
+  const GEMINI_KEY = process.env.GEMINI_API_KEY?.trim();
 
-Given a customer's natural-language description, recommend 1–3 matching products from the catalogue below.
+  const keywordFallback = () => {
+    const terms = query.toLowerCase().split(/\s+/).filter((t) => t.length > 2);
+    const scored = catalog
+      .map((p) => {
+        const hay = `${p.name} ${p.shortDescription} ${p.categoryName} ${(p.availableWoods ?? []).map((w) => w.name).join(" ")}`.toLowerCase();
+        const score = terms.reduce((s, t) => s + (hay.includes(t) ? 1 : 0), 0);
+        return { p, score };
+      })
+      .filter((x) => x.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
 
-${PRODUCT_CATALOGUE}
+    const picks = scored.length > 0 ? scored.map((x) => x.p) : catalog.filter((p) => p.isFeatured).slice(0, 3);
+    return {
+      recommendations: picks.map((p) => ({
+        slug: p.slug,
+        reason: `Matches your search in Square Cube Furniture's ${p.categoryName} collection.`,
+      })),
+    };
+  };
 
-Customer query: "${query.trim()}"
-
-Respond with ONLY a JSON object — no markdown, no code fences, no explanation:
-{
-  "recommendations": [
-    { "slug": "<exact-slug-from-catalogue>", "reason": "<one sentence why this matches>" },
-    ...
-  ]
-}
-
-If no products match, return: { "recommendations": [] }`;
+  if (!GEMINI_KEY) {
+    return NextResponse.json({ success: true, data: keywordFallback() });
+  }
 
   try {
-    const message = await anthropic.messages.create({
-      model:      "claude-haiku-4-5-20251001",
-      max_tokens: 400,
-      messages:   [{ role: "user", content: prompt }],
-    });
+    const genAI = new GoogleGenerativeAI(GEMINI_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-    const rawText = message.content
-      .filter((b) => b.type === "text")
-      .map((b) => (b as { type: "text"; text: string }).text)
-      .join("");
+    const catalogText = catalog
+      .map((p) => `- ${p.slug} | ${p.name} | ${p.categoryName} | ${p.shortDescription}`)
+      .join("\n");
 
-    let parsed: RecommendResponse;
-    try {
-      parsed = JSON.parse(rawText.trim()) as RecommendResponse;
-    } catch {
-      // Attempt to extract JSON from a potentially wrapped response
-      const match = rawText.match(/\{[\s\S]*\}/);
-      parsed = match
-        ? (JSON.parse(match[0]) as RecommendResponse)
-        : { recommendations: [] };
-    }
+    const prompt = `You are a furniture recommendation engine for Square Cube Furniture.
+Select 1 to 3 best matching slugs from this catalog for the query: "${query.trim()}".
+
+Catalog:
+${catalogText}
+
+Return ONLY valid JSON:
+{ "recommendations": [ { "slug": "<exact-slug>", "reason": "<one concise sentence>" } ] }`;
+
+    const response = await model.generateContent(prompt);
+    const rawText = response.response.text();
+    const match = rawText.match(/\{[\s\S]*\}/);
+    const parsed = match ? JSON.parse(match[0]) : keywordFallback();
 
     return NextResponse.json({ success: true, data: parsed });
-  } catch (err) {
-    console.error("[ai/recommend]", err);
-    return NextResponse.json({ error: "Recommendation failed." }, { status: 500 });
+  } catch {
+    return NextResponse.json({ success: true, data: keywordFallback() });
   }
 }

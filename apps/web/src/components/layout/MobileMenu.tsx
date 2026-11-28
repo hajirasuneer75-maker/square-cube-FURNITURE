@@ -2,10 +2,10 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { X, ChevronRight } from "lucide-react";
+import { X, ChevronRight, Sparkles, Wrench } from "lucide-react";
 import { NAVIGATION_CATEGORIES } from "@/lib/constants/categories";
 import { useSettingsStore } from "@/store/useSettingsStore";
-import { cn } from "@/lib/utils";
+import { cn, generateWhatsAppUrl } from "@/lib/utils";
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -32,17 +32,15 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
 
   return (
     <>
-      {/* Backdrop */}
       <div
-        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm animate-fade-in"
+        className="fixed inset-0 z-50 bg-espresso/50 backdrop-blur-sm animate-fade-in"
         onClick={onClose}
         aria-hidden="true"
       />
 
-      {/* Drawer */}
       <div
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-80 max-w-[90vw] bg-white flex flex-col",
+          "fixed inset-y-0 left-0 z-50 w-80 max-w-[90vw] bg-white flex flex-col border-r border-warm-border",
           "animate-slide-in-left"
         )}
         role="dialog"
@@ -50,107 +48,118 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
         aria-label="Navigation menu"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-warm-border bg-alabaster">
           <div>
-            <p className="font-display text-lg font-semibold text-stone-900">Square Cube</p>
-            <p className="text-[10px] tracking-[0.15em] uppercase text-gold-600">Bespoke Furniture</p>
+            <p className="font-display text-lg font-semibold text-espresso">Square Cube Furniture</p>
+            <p className="text-[9px] tracking-[0.2em] uppercase text-champagne font-ui">
+              Luxury Custom Studio
+            </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-stone-400 hover:text-stone-700 transition-colors rounded-sm"
+            className="p-2 text-espresso/50 hover:text-espresso transition-colors"
             aria-label="Close menu"
           >
             <X size={20} />
           </button>
         </div>
 
-        {/* Scrollable Category List */}
+        {/* Links */}
         <div className="flex-1 overflow-y-auto py-4">
-          <p className="px-5 mb-2 section-label">Browse Categories</p>
-
-          <nav className="space-y-0.5 px-3">
+          <p className="px-5 mb-2 section-label">Studio &amp; Services</p>
+          <nav className="space-y-0.5 px-3 mb-4">
             <Link
               href="/products"
-              className="flex items-center justify-between px-3 py-3 rounded-sm text-sm text-stone-700 hover:bg-stone-50 hover:text-stone-900 transition-colors group"
+              className="flex items-center justify-between px-3 py-3 text-sm text-espresso/80 hover:bg-alabaster hover:text-espresso transition-colors"
               onClick={onClose}
             >
-              <span className="flex items-center gap-3">
-                <span className="text-base">🛒</span>
-                <span className="font-medium">All Products</span>
-              </span>
-              <ChevronRight size={14} className="text-stone-300 group-hover:text-stone-500" />
+              <span className="font-ui font-medium">Collections</span>
+              <ChevronRight size={14} className="text-espresso/30" />
             </Link>
+            <Link
+              href="/custom-furniture"
+              className="flex items-center justify-between px-3 py-3 text-sm text-espresso/80 hover:bg-alabaster hover:text-espresso transition-colors"
+              onClick={onClose}
+            >
+              <span className="font-ui font-medium">Custom Studio &amp; Estimator</span>
+              <ChevronRight size={14} className="text-espresso/30" />
+            </Link>
+            <Link
+              href="/maintenance"
+              className="flex items-center justify-between px-3 py-3 text-sm text-espresso/80 hover:bg-alabaster hover:text-espresso transition-colors"
+              onClick={onClose}
+            >
+              <span className="flex items-center gap-2 font-ui font-medium">
+                <Wrench size={14} className="text-champagne" /> Maintenance &amp; Care
+              </span>
+              <ChevronRight size={14} className="text-espresso/30" />
+            </Link>
+            <Link
+              href="/ai-stylist"
+              className="flex items-center justify-between px-3 py-3 text-sm text-espresso/80 hover:bg-alabaster hover:text-espresso transition-colors"
+              onClick={onClose}
+            >
+              <span className="flex items-center gap-2 font-ui font-medium">
+                <Sparkles size={14} className="text-champagne" /> AI Room Stylist
+              </span>
+              <ChevronRight size={14} className="text-espresso/30" />
+            </Link>
+          </nav>
 
-            {NAVIGATION_CATEGORIES.filter((c) => c.slug !== "custom").map((cat) => (
+          <div className="mx-5 my-3 h-px bg-warm-border" />
+          <p className="px-5 mb-2 section-label">Explore Categories</p>
+          <nav className="space-y-0.5 px-3">
+            {NAVIGATION_CATEGORIES.filter((c) => c.slug !== "custom").slice(0, 10).map((cat) => (
               <Link
                 key={cat.slug}
                 href={`/categories/${cat.slug}`}
-                className="flex items-center justify-between px-3 py-3 rounded-sm text-sm text-stone-700 hover:bg-stone-50 hover:text-stone-900 transition-colors group"
+                className="flex items-center justify-between px-3 py-2.5 text-sm text-espresso/75 hover:bg-alabaster hover:text-espresso transition-colors"
                 onClick={onClose}
               >
                 <span className="flex items-center gap-3">
                   <span className="text-base leading-none">{cat.icon}</span>
-                  <span className="font-medium">{cat.name}</span>
+                  <span className="font-ui font-medium">{cat.name}</span>
                 </span>
-                <ChevronRight size={14} className="text-stone-300 group-hover:text-stone-500" />
+                <ChevronRight size={14} className="text-espresso/30" />
               </Link>
             ))}
           </nav>
 
-          <div className="mx-5 my-4 h-px bg-stone-100" />
-
+          <div className="mx-5 my-3 h-px bg-warm-border" />
           <nav className="space-y-0.5 px-3">
             {[
-              { href: "/customize", icon: "✏️", label: "Custom Furniture" },
-              { href: "/gallery",   icon: "🖼️", label: "Gallery" },
-              { href: "/faq",       icon: "❓", label: "FAQ" },
-              { href: "/about",     icon: "ℹ️",  label: "About Us" },
+              { href: "/gallery", label: "Portfolio Gallery" },
+              { href: "/about",   label: "About Square Cube Furniture" },
+              { href: "/faq",     label: "FAQ" },
             ].map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex items-center justify-between px-3 py-3 rounded-sm text-sm text-stone-700 hover:bg-stone-50 hover:text-stone-900 transition-colors group"
+                className="flex items-center justify-between px-3 py-2.5 text-sm font-ui text-espresso/70 hover:bg-alabaster hover:text-espresso transition-colors"
                 onClick={onClose}
               >
-                <span className="flex items-center gap-3">
-                  <span className="text-base leading-none">{item.icon}</span>
-                  <span className="font-medium">{item.label}</span>
-                </span>
-                <ChevronRight size={14} className="text-stone-300 group-hover:text-stone-500" />
+                <span>{item.label}</span>
+                <ChevronRight size={14} className="text-espresso/30" />
               </Link>
             ))}
           </nav>
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 border-t border-stone-100 space-y-3">
-          <Link
-            href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent("Hello Square Cube! I'd like to enquire about furniture.")}`}
+        <div className="p-4 border-t border-warm-border bg-alabaster space-y-3">
+          <a
+            href={generateWhatsAppUrl(
+              whatsappNumber,
+              "Hello Square Cube Furniture! I'd like to enquire about your furniture."
+            )}
             target="_blank"
             rel="noopener noreferrer"
-            className="btn-whatsapp w-full text-sm py-3"
+            className="btn-whatsapp w-full text-xs py-3"
             onClick={onClose}
           >
             <WhatsAppIcon className="w-4 h-4" />
             Chat on WhatsApp
-          </Link>
-
-          <div className="flex gap-2">
-            <Link
-              href="/login"
-              className="flex-1 btn-outline text-sm py-2.5 text-center"
-              onClick={onClose}
-            >
-              Login
-            </Link>
-            <Link
-              href="/register"
-              className="flex-1 btn-primary text-sm py-2.5 text-center"
-              onClick={onClose}
-            >
-              Register
-            </Link>
-          </div>
+          </a>
         </div>
       </div>
     </>

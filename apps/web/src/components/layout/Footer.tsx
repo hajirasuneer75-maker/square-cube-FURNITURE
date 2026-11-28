@@ -3,35 +3,16 @@
 import Link from "next/link";
 import { WOOD_TYPES } from "@/lib/constants/categories";
 import { useSettingsStore } from "@/store/useSettingsStore";
+import { generateWhatsAppUrl, getWhatsAppNumber } from "@/lib/utils";
 
-const FOOTER_CATEGORIES = [
-  { name: "Living Room",    href: "/categories/living-room" },
-  { name: "Bedroom",        href: "/categories/bedroom" },
-  { name: "Dining Room",    href: "/categories/dining-room" },
-  { name: "Office",         href: "/categories/office" },
-  { name: "Wardrobes",      href: "/categories/wardrobes" },
-  { name: "Sofas",          href: "/categories/sofas" },
-  { name: "Beds",           href: "/categories/beds" },
-  { name: "Custom Furniture", href: "/customize" },
-];
-
-const QUICK_LINKS = [
-  { name: "About Us",       href: "/about" },
-  { name: "Custom Furniture", href: "/customize" },
-  { name: "Gallery",        href: "/gallery" },
-  { name: "FAQ",            href: "/faq" },
-  { name: "Track Order",    href: "/account/orders" },
-  { name: "Contact Us",     href: "/contact" },
-  { name: "Privacy Policy", href: "/privacy" },
-  { name: "Terms",          href: "/terms" },
-];
-
-const PROMISES = [
-  "✦ Handcrafted in India",
-  "✦ Premium Quality Wood",
-  "✦ Custom Dimensions",
-  "✦ WhatsApp-First Support",
-  "✦ Satisfaction Guaranteed",
+const FOOTER_LINKS = [
+  { label: "Collections", href: "/products" },
+  { label: "Custom Studio", href: "/custom-furniture" },
+  { label: "AI Room Stylist", href: "/ai-stylist" },
+  { label: "Maintenance & Care", href: "/maintenance" },
+  { label: "Gallery", href: "/gallery" },
+  { label: "About Us", href: "/about" },
+  { label: "FAQ", href: "/faq" },
 ];
 
 function WhatsAppIcon({ className }: { className?: string }) {
@@ -43,97 +24,109 @@ function WhatsAppIcon({ className }: { className?: string }) {
 }
 
 export default function Footer() {
-  const { whatsappNumber, whatsappDisplay, businessName, businessTagline } = useSettingsStore();
+  const { whatsappNumber, whatsappDisplay } = useSettingsStore();
+  const waNum = getWhatsAppNumber(whatsappNumber);
+  const waDisplay = whatsappDisplay || "+91 85470 97173";
 
   return (
-    <footer className="bg-stone-900 text-stone-300">
-      {/* Main grid */}
+    <footer style={{ backgroundColor: "#231F1E" }} className="text-white/70">
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
-
           {/* Brand */}
           <div>
             <div className="mb-5">
-              <p className="font-display text-2xl font-semibold text-white">{businessName}</p>
-              <p className="text-[10px] tracking-[0.2em] uppercase text-gold-400 mt-0.5">{businessTagline}</p>
+              <p className="font-display text-2xl font-semibold text-white leading-none">
+                Square Cube Furniture
+              </p>
+              <p className="text-[9px] tracking-[0.28em] uppercase text-champagne font-ui mt-2">
+                Luxury Custom Furniture Studio
+              </p>
             </div>
-            <p className="text-sm text-stone-400 leading-relaxed mb-6">
-              Premium custom furniture crafted with the finest Indian wood.
-              Every piece is built to your exact specifications.
+            <p className="text-sm text-white/55 leading-relaxed mb-6 font-ui">
+              Ultra-luxury handcrafted architectural furniture built to your exact proportions.
+              Nilambur Teak, Mahogany, Rosewood and Marine Ply veneers.
             </p>
-            <Link
-              href={`https://wa.me/${whatsappNumber}`}
+            <a
+              href={generateWhatsAppUrl(
+                waNum,
+                "Hello Square Cube Furniture! I'd like to enquire about your furniture."
+              )}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-[#25D366] hover:bg-[#1ebe5d] text-white text-sm font-medium px-4 py-2.5 transition-colors"
+              className="inline-flex items-center gap-2 text-white text-sm font-ui font-medium px-4 py-2.5 transition-colors bg-[#25D366] hover:bg-[#1ebe5d]"
               suppressHydrationWarning
             >
               <WhatsAppIcon className="w-4 h-4" />
-              {whatsappDisplay}
-            </Link>
-          </div>
-
-          {/* Categories */}
-          <div>
-            <h3 className="section-label text-gold-400 mb-5">Categories</h3>
-            <ul className="space-y-2.5">
-              {FOOTER_CATEGORIES.map((cat) => (
-                <li key={cat.href}>
-                  <Link href={cat.href} className="text-sm text-stone-400 hover:text-white transition-colors">
-                    {cat.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+              {waDisplay}
+            </a>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h3 className="section-label text-gold-400 mb-5">Quick Links</h3>
+            <h3 className="section-label text-champagne mb-5">Navigate</h3>
             <ul className="space-y-2.5">
-              {QUICK_LINKS.map((link) => (
+              {FOOTER_LINKS.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="text-sm text-stone-400 hover:text-white transition-colors">
-                    {link.name}
+                  <Link
+                    href={link.href}
+                    className="text-sm font-ui text-white/55 hover:text-white transition-colors"
+                  >
+                    {link.label}
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Wood Types + Promise */}
+          {/* Wood Types */}
           <div>
-            <h3 className="section-label text-gold-400 mb-5">Wood Types</h3>
+            <h3 className="section-label text-champagne mb-5">Signature Woods</h3>
             <div className="flex flex-wrap gap-2 mb-8">
               {WOOD_TYPES.map((wood) => (
                 <Link
                   key={wood}
-                  href={`/products?woodType=${wood}`}
-                  className="text-xs text-stone-400 border border-stone-700 px-2.5 py-1 hover:border-gold-600 hover:text-gold-400 transition-colors"
+                  href={`/products?woodType=${encodeURIComponent(wood)}`}
+                  className="text-xs font-ui text-white/55 border border-white/15 px-2.5 py-1 hover:border-champagne hover:text-champagne transition-colors"
                 >
                   {wood}
                 </Link>
               ))}
             </div>
+          </div>
 
-            <h3 className="section-label text-gold-400 mb-4">Our Promise</h3>
-            <ul className="space-y-2">
-              {PROMISES.map((p) => (
-                <li key={p} className="text-xs text-stone-500">{p}</li>
+          {/* Services */}
+          <div>
+            <h3 className="section-label text-champagne mb-5">Studio Services</h3>
+            <ul className="space-y-2.5">
+              {[
+                { label: "Custom Studio & Estimator", href: "/custom-furniture" },
+                { label: "AI Room Stylist", href: "/ai-stylist" },
+                { label: "Wood Polishing & PU", href: "/maintenance" },
+                { label: "Sofa Re-upholstery", href: "/maintenance" },
+                { label: "Termite Treatment", href: "/maintenance" },
+                { label: "Dismantling & Shifting", href: "/maintenance" },
+              ].map((s) => (
+                <li key={s.label}>
+                  <Link
+                    href={s.href}
+                    className="text-sm font-ui text-white/55 hover:text-white transition-colors"
+                  >
+                    {s.label}
+                  </Link>
+                </li>
               ))}
             </ul>
           </div>
         </div>
       </div>
 
-      {/* Bottom bar */}
-      <div className="border-t border-stone-800">
+      <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-stone-500">
-            © {new Date().getFullYear()} Square Cube. All rights reserved.
+          <p className="text-xs font-ui text-white/35">
+            © {new Date().getFullYear()} Square Cube Furniture. All rights reserved.
           </p>
-          <p className="text-xs text-stone-600">
-            Made with care in India 🇮🇳
+          <p className="text-xs font-ui text-white/30">
+            Handcrafted in Kerala, India · Architectural Quality Guaranteed
           </p>
         </div>
       </div>

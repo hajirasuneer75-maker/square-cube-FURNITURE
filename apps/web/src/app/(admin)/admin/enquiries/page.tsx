@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import EnquiriesManager from "@/components/admin/EnquiriesManager";
 
-export const metadata: Metadata = { title: "Enquiries | Square Cube Admin" };
+export const metadata: Metadata = { title: "Enquiries & Care | Square Cube Furniture Admin" };
 
 export default function AdminEnquiriesPage() {
   return (
